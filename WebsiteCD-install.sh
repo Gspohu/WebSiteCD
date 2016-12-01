@@ -94,7 +94,7 @@ rainloop.$domainName.	0	A	ipv4 of your server
 imap.$domainName.	0	CNAME	$domainName.		
 stmp.$domainName.	0	CNAME	$domainName.		
 _dmarc.$domainName.	0	TXT	\"v=DMARC1; p=reject; rua=mailto:postmaster@$domainName; ruf=mailto:admin@$domainName; fo=0; adkim=s; aspf=s; pct=100; rf=afrf; sp=reject\"		
-$domainName.	600	SPF	\"v=spf1 a mx ptr ip4:ipv4 of your server include:_spf.google.com ~all\"" 25 80	
+$domainName.	600	SPF	\"v=spf1 a mx ptr ip4:ipv4 of your server include:_spf.google.com ~all\"" 20 80	
 
   # Install Postfix
   apt-get -y install postfix postfix-mysql postfix-policyd-spf-python
@@ -1170,13 +1170,13 @@ Install_Postgrey()
 
 Install_WebsiteCD()
 {
-  wget https://github.com/Gspohu/gitmh/archive/master.zip
+  wget https://github.com/Gspohu/WebSiteCD/archive/master.zip
   mkdir /var/www/CairnDevices/
   unzip master.zip -d /var/www/CairnDevices/
-  rsync -a /var/www/CairnDevices/gitmh-master/ /var/www/CairnDevices/ 
+  rsync -a /var/www/CairnDevices/WebSiteCD-master/ /var/www/CairnDevices/ 
   chmod -R 777 /var/www/CairnDevices
   rm master.zip 
-  rm -r /var/www/CairnDevices/gitmh-master/
+  rm -r /var/www/CairnDevices/WebSiteCD-master/
   echo -e "Installation de du site web de Cairn Devices.......\033[32mFait\033[00m"
   sleep 4
   
@@ -1643,7 +1643,23 @@ Security_app()
   {
     apt-get -y install fail2ban
 
-    echo "[ssh]" > /etc/fail2ban/jail.conf
+    echo "[ssh-ddos]" > /etc/fail2ban/jail.conf
+    echo "enabled  = true" >> /etc/fail2ban/jail.conf
+    echo "port     = ssh" >> /etc/fail2ban/jail.conf
+    echo "filter   = sshd-ddos" >> /etc/fail2ban/jail.conf
+    echo "logpath  = /var/log/auth.log" >> /etc/fail2ban/jail.conf
+    echo "maxretry = 6" >> /etc/fail2ban/jail.conf
+
+    echo "[apache]" >> /etc/fail2ban/jail.conf
+    echo "enabled = true" >> /etc/fail2ban/jail.conf
+
+    echo "[apache-noscript]" >> /etc/fail2ban/jail.conf
+    echo "enabled  = true" >> /etc/fail2ban/jail.conf
+
+    echo "[apache-overflows]" >> /etc/fail2ban/jail.conf
+    echo "enabled  = true" >> /etc/fail2ban/jail.conf
+
+    echo "[ssh]" >> /etc/fail2ban/jail.conf
     echo "enabled = true" >> /etc/fail2ban/jail.conf
     echo "port = ssh" >> /etc/fail2ban/jail.conf
     echo "filter = sshd" >> /etc/fail2ban/jail.conf
@@ -1670,16 +1686,28 @@ Security_app()
   echo "logpath = /var/log/apache2/*.log" >> /etc/fail2ban/jail.conf
   echo "maxretry = 1" >> /etc/fail2ban/jail.conf
 
+  echo "[postfix-sasl]" >> /etc/fail2ban/jail.conf
+  echo "enabled  = true" >> /etc/fail2ban/jail.conf
+  echo "port     = smtp,ssmtp" >> /etc/fail2ban/jail.conf
+  echo "filter   = postfix-sasl" >> /etc/fail2ban/jail.conf
+  echo "logpath  = /var/log/mail.log" >> /etc/fail2ban/jail.conf
+  echo "maxretry = 3" >> /etc/fail2ban/jail.conf
+  echo "bantime  = 600" >> /etc/fail2ban/jail.conf
+
   # Add filter http-get-post-dos
-  echo "[Definition]" >> /etc/fail2ban/filter.d/http-get-post-dos.conf
-  echo "failregex = .*:(80|443) <host> .*(GET|POST) .*" >> /etc/fail2ban/filter.d/http-get-post-dos.conf
+  echo "[Definition]" > /etc/fail2ban/filter.d/http-get-post-dos.conf
+  echo 'failregex = ^.*"(GET|POST)' >> /etc/fail2ban/filter.d/http-get-post-dos.conf
   echo "ignoreregex =" >> /etc/fail2ban/filter.d/http-get-post-dos.conf
 
   # Add filter w00t
-  echo "[Definition]" >> /etc/fail2ban/filter.d/http-w00t.conf
-  echo 'failregex = ^<HOST> -.*"GET \/.*w00t.*".*' >> /etc/fail2ban/filter.d/http-w00t.conf
-  echo "\[client <HOST>\] client sent HTTP\/1\.1 request without hostname \(see RFC2616 section 14\.23\)$" >> /etc/fail2ban/filter.d/http-w00t.conf
+  echo "[Definition]" > /etc/fail2ban/filter.d/http-w00t.conf
+  echo 'failregex = ^<HOST> -.*"GET \/.*w00t.*".*\[client <HOST>\] client sent HTTP\/1\.1 request without hostname \(see RFC2616 section 14\.23\)$' >> /etc/fail2ban/filter.d/http-w00t.conf
   echo "ignoreregex =" >> /etc/fail2ban/filter.d/http-w00t.conf
+
+  # Add filter SASL
+  echo "[Definition]" > /etc/fail2ban/filter.d/postfix-sasl.conf
+  echo "failregex = warning: (.*)\[<HOST>\]: SASL LOGIN authentication failed: authentication failure" >> /etc/fail2ban/filter.d/postfix-sasl.conf
+  echo "ignoreregex =" >> /etc/fail2ban/filter.d/postfix-sasl.conf
 
   systemctl restart fail2ban
   }
@@ -1739,17 +1767,22 @@ Security_app()
     sysctl -n -e -q
     }
 
+  Install_AppArmor()
+  {
+    apt-get -y install apparmor apparmor-profiles apparmor-utils
+  }
+
   Mail_adress
 
   dialog --backtitle "Installation of security apps" --title "Choose security apps" \
   --ok-label "Ok" --cancel-label "Quit" \
-  --checklist "" 18 60 10 \
+  --checklist "" 18 77 10 \
   "Rootkits" "Check rootkits with rkhunter, chrootkit, lynis" off \
   "SNORT" "Installattion of SNORT with web interface" off \
-  "SSH" "Change port SSH and send email when SSH connexion is successfull" off \
+  "SSH" "Change SSH port, send email when SSH connexion" off \
   "ModSecurity" "Install apache WAF" off \
   "Apache" "Hide apache signature" off \
-  "Fail2ban" "Install fal2ban whith rule against W00t, Dos/DDos, SSH bruteforce" off \
+  "Fail2ban" "Install fail2ban rules W00t, Dos/DDos, SSH/SASL" off \
   "Unattended Upgrades" "Install Unattended Upgrade" off \
   "Sys protection" "DOS/DDOS protection, martian log, ICMP" off 2> $FICHTMP
 
@@ -1760,12 +1793,12 @@ Security_app()
   case $i in 
   "Rootkits") Check_rootkits ;;
   "SNORT") Install_SNORT ;;
-  "SSH")  mail_SSH Change_SSHport ;;
+  "SSH")  mail_SSH; Change_SSHport ;;
   "ModSecurity") Install_modSecurity ;;
   "Apache") Hide_ApacheVersion ;;
   "Fail2ban") Install_Fail2ban ;;
-  "Unattended") Install_unattendedupgrades ;;
-  "Sys") DOSDDOSOtherattacks_protection ;;
+  "Unattended Upgrades") Install_unattendedupgrades ;;
+  "Sys protection") DOSDDOSOtherattacks_protection ;;
   esac
   done
   else exit 0
@@ -1844,6 +1877,7 @@ then
   Install_Postgrey
   Install_WebsiteCD
   Lets_cert
+  Security_app
   Cleanning
 elif [ "$choix" = "Serveur mail" ]
 then
