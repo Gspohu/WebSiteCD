@@ -1639,8 +1639,14 @@ echo "User $USER just logged in from $ip at $Date" | mail -s "SSH Login" $email 
 
   Hide_ApacheVersion()
   {
-    echo "ServerSignature Off" >> /etc/apache2/apache2.conf
-    echo "ServerTokens Prod" >> /etc/apache2/apache2.conf
+    echo "ServerSignature Off
+ServerTokens Prod
+TraceEnable Off
+Header unset ETag
+Header always unset X-Powered-By
+FileETag None" >> /etc/apache2/apache2.conf
+
+    systemctl restart apache2
   }
 
   Install_Fail2ban()
@@ -1894,12 +1900,19 @@ destemail = $email" >> /etc/fail2ban/jail.local
     echo "net.ipv4.conf.default.rp_filter = 1" >> /etc/sysctl.conf
     echo "net.ipv4.conf.all.rp_filter = 1" >> /etc/sysctl.conf
     echo "net.ipv4.tcp_syncookies = 1" >> /etc/sysctl.conf
-    echo "net.ipv4.tcp_max_syn_backlog = 1024" >> /etc/sysctl.conf
+    echo "net.ipv4.tcp_max_syn_backlog = 2048" >> /etc/sysctl.conf
     echo "net.ipv4.icmp_echo_ignore_broadcasts = 1" >> /etc/sysctl.conf
     echo "net.ipv4.icmp_ignore_bogus_error_responses = 1" >> /etc/sysctl.conf
     echo "net.ipv4.conf.all.log_martians = 1" >> /etc/sysctl.conf
 
     sysctl -n -e -q
+
+    #  Secure shared memory
+    tmpfs     /run/shm     tmpfs     defaults,noexec,nosuid     0     0
+
+   # Stop IP spoofing
+   nospoof on >> /etc/host.conf
+
     }
 
   Install_AppArmor()
