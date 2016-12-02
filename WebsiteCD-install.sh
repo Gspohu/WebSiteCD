@@ -1240,7 +1240,8 @@ Lets_cert()
   sed -i "s/<\/Directory>/<\/Directory>\nRedirect permanent \/ https:\/\/rainloop.$domainName\//g" /etc/apache2/sites-available/rainloop.conf
   
   # Ajout d'une règle cron pour renouveller automatique le certificat
-  echo "* * * 2 * letsencrypt renew" > /tmp/crontab.tmp
+  crontab -l > /tmp/crontab.tmp 
+  echo "* * * 2 * letsencrypt renew" >> /tmp/crontab.tmp
   crontab /tmp/crontab.tmp
   rm /tmp/crontab.tmp
 
@@ -1279,12 +1280,12 @@ Security_app()
     # Crontab rules for anti rootkit
     crontab -l > /tmp/crontab.tmp
     echo "0 0 * * 0 root rkhunter --update" >> /tmp/crontab.tmp
-    echo "0 1 * * 0 root rkhunter --checkall --report-warnings-only | $email -s \"[$hostname on $domainName][RkHunter] Rapport de vérification\"" >> /tmp/crontab.tmp
+    echo "0 1 * * 0 root rkhunter --checkall --report-warnings-only | mail -s \"[$hostname on $domainName][RkHunter] Rapport de vérification\" $email" >> /tmp/crontab.tmp
 
-    echo "0 2 * * 0 root chkrootkit -q | $email -s \"[$hostname on $domainName][ChkRootkit] Rapport de vérification\"" >> /tmp/crontab.tmp
+    echo "0 2 * * 0 root chkrootkit -q | mail -s \"[$hostname on $domainName][ChkRootkit] Rapport de vérification\" $email" >> /tmp/crontab.tmp
 
     echo "0 3 1 * * root lynis --check-update" >> /tmp/crontab.tmp
-    echo "0 4 1 * * root lynis --check-all -Q | $email -s \"[$hostname on $domainName][Lynis] Rapport de vérification\"" >> /tmp/crontab.tmp
+    echo "0 4 1 * * root lynis --check-all -Q | mail -s \"[$hostname on $domainName][Lynis] Rapport de vérification\" $email" >> /tmp/crontab.tmp
     crontab /tmp/crontab.tmp
     rm /tmp/crontab.tmp
   }
@@ -1618,7 +1619,10 @@ Security_app()
   mail_SSH()
   {
      # Send mail when someone is succefully connected in SSH
-    echo "echo 'SSH access on '\` id | cut -d \"(\" -f2 | cut -d \")\" -f1\`' account on '\`hostname\`' server at : ' \`date\`\ \`who\` | mail -s \"NOTIFICATION - Connexion on \"\`id | cut -d '(' -f2 | cut -d ')' -f1\`\" account with SSH since : \`who | cut -d\"(\" -f2 | cut -d\")\" -f1\`\" $email" >>  /etc/ssh/sshrc
+    echo 'ip=`echo $SSH_CONNECTION | cut -d " " -f 1`
+hostname=`hostname`
+Date=$(date)
+echo "User $USER just logged in from $ip at $Date" | mail -s "SSH Login" $email &' >>  /etc/ssh/sshrc
   }
 
   Install_modSecurity()
@@ -1643,71 +1647,202 @@ Security_app()
   {
     apt-get -y install fail2ban
 
-    echo "[ssh-ddos]" > /etc/fail2ban/jail.conf
-    echo "enabled  = true" >> /etc/fail2ban/jail.conf
-    echo "port     = ssh" >> /etc/fail2ban/jail.conf
-    echo "filter   = sshd-ddos" >> /etc/fail2ban/jail.conf
-    echo "logpath  = /var/log/auth.log" >> /etc/fail2ban/jail.conf
-    echo "maxretry = 6" >> /etc/fail2ban/jail.conf
+    echo "[ssh-ddos]
+enabled  = true
+port     = ssh,sftp,$sshport
+filter   = sshd-ddos
+logpath  = /var/log/auth.log
+maxretry = 6
 
-    echo "[apache]" >> /etc/fail2ban/jail.conf
-    echo "enabled = true" >> /etc/fail2ban/jail.conf
+[apache]
+enabled  = true
+port     = http,https
+filter   = apache-auth
+logpath  = /var/log/apache*/*error.log
+maxretry = 6
 
-    echo "[apache-noscript]" >> /etc/fail2ban/jail.conf
-    echo "enabled  = true" >> /etc/fail2ban/jail.conf
+[apache-noscript]
+enabled  = true
+port     = http,https
+filter   = apache-noscript
+logpath  = /var/log/apache*/*error.log
+maxretry = 6
 
-    echo "[apache-overflows]" >> /etc/fail2ban/jail.conf
-    echo "enabled  = true" >> /etc/fail2ban/jail.conf
+[apache-overflows]
+enabled  = true
+port     = http,https
+filter   = apache-overflows
+logpath  = /var/log/apache*/*error.log
+maxretry = 2
 
-    echo "[ssh]" >> /etc/fail2ban/jail.conf
-    echo "enabled = true" >> /etc/fail2ban/jail.conf
-    echo "port = ssh" >> /etc/fail2ban/jail.conf
-    echo "filter = sshd" >> /etc/fail2ban/jail.conf
-    echo "action = iptables[name=SSH, port=ssh, protocol=tcp]" >> /etc/fail2ban/jail.conf
-    echo "logpath = /var/log/auth.log" >> /etc/fail2ban/jail.conf
-    echo "maxretry = 3" >> /etc/fail2ban/jail.conf
-    echo "bantime = 1000" >> /etc/fail2ban/jail.conf
+[apache-badbots]
+enabled  = true
+port     = http,https
+filter   = apache-badbots
+logpath  = /var/log/apache*/*error.log
+maxretry = 2
 
-  echo "[http-get-post-dos]" >> /etc/fail2ban/jail.conf
-  echo "enabled = true" >> /etc/fail2ban/jail.conf
-  echo "port = http,https" >> /etc/fail2ban/jail.conf
-  echo "filter = http-get-post-dos" >> /etc/fail2ban/jail.conf
-  echo "logpath = /var/log/apache2/access.log" >> /etc/fail2ban/jail.conf
-  echo "maxretry = 360" >> /etc/fail2ban/jail.conf
-  echo "findtime = 120" >> /etc/fail2ban/jail.conf
-  echo "action = iptables[name=HTTP, port=http, protocol=tcp]" >> /etc/fail2ban/jail.conf
-  echo "mail-whois-lines[name=%(__name__)s, dest=%(destemail)s, logpath=%(logpath)s]" >> /etc/fail2ban/jail.conf
-  echo "bantime = 200" >> /etc/fail2ban/jail.conf
+[php-url-fopen]
+enabled = true
+port    = http,https
+filter  = php-url-fopen
+logpath = /var/log/apache*/*access.log
 
-  echo "[http-w00t]" >> /etc/fail2ban/jail.conf
-  echo "enabled = true" >> /etc/fail2ban/jail.conf
-  echo "filter = http-w00t" >> /etc/fail2ban/jail.conf
-  echo "action = iptables[name=Apache-http-w00t,port=80,protocol=tcp]" >> /etc/fail2ban/jail.conf
-  echo "logpath = /var/log/apache2/*.log" >> /etc/fail2ban/jail.conf
-  echo "maxretry = 1" >> /etc/fail2ban/jail.conf
+[ssh]
+enabled = true
+port = ssh,sftp,$sshport
+filter = sshd
+logpath = /var/log/auth.log
+maxretry = 3
+bantime = 1000
 
-  echo "[postfix-sasl]" >> /etc/fail2ban/jail.conf
-  echo "enabled  = true" >> /etc/fail2ban/jail.conf
-  echo "port     = smtp,ssmtp" >> /etc/fail2ban/jail.conf
-  echo "filter   = postfix-sasl" >> /etc/fail2ban/jail.conf
-  echo "logpath  = /var/log/mail.log" >> /etc/fail2ban/jail.conf
-  echo "maxretry = 3" >> /etc/fail2ban/jail.conf
-  echo "bantime  = 600" >> /etc/fail2ban/jail.conf
+[http-get-post-dos]
+enabled = true
+port = http,https
+filter = http-get-post-dos
+logpath = /var/log/apache2/access.log
+maxretry = 360
+findtime = 120
+mail-whois-lines[name=%(__name__)s, dest=%(destemail)s, logpath=%(logpath)s]
+bantime = 200
+
+[http-w00t]
+enabled = true
+filter = http-w00t
+logpath = /var/log/apache2/*.log
+maxretry = 1
+
+[postfix-sasl]
+enabled  = true
+port     = smtp,ssmtp
+filter   = postfix-sasl
+logpath  = /var/log/syslog
+maxretry = 3
+bantime  = 600" > /etc/fail2ban/jail.local
 
   # Add filter http-get-post-dos
   echo "[Definition]" > /etc/fail2ban/filter.d/http-get-post-dos.conf
-  echo 'failregex = ^.*"(GET|POST)' >> /etc/fail2ban/filter.d/http-get-post-dos.conf
+  echo 'failregex = ^<HOST> -.*"(GET|POST).*' >> /etc/fail2ban/filter.d/http-get-post-dos.conf
   echo "ignoreregex =" >> /etc/fail2ban/filter.d/http-get-post-dos.conf
 
   # Add filter w00t
   echo "[Definition]" > /etc/fail2ban/filter.d/http-w00t.conf
-  echo 'failregex = ^<HOST> -.*"GET \/.*w00t.*".*\[client <HOST>\] client sent HTTP\/1\.1 request without hostname \(see RFC2616 section 14\.23\)$' >> /etc/fail2ban/filter.d/http-w00t.conf
+  echo 'failregex = ^<HOST> -.*"(GET|POST).*\/.*w00t.*' >> /etc/fail2ban/filter.d/http-w00t.conf
   echo "ignoreregex =" >> /etc/fail2ban/filter.d/http-w00t.conf
 
   # Add filter SASL
   echo "[Definition]" > /etc/fail2ban/filter.d/postfix-sasl.conf
   echo "failregex = warning: (.*)\[<HOST>\]: SASL LOGIN authentication failed: authentication failure" >> /etc/fail2ban/filter.d/postfix-sasl.conf
   echo "ignoreregex =" >> /etc/fail2ban/filter.d/postfix-sasl.conf
+
+  # Mail Fail2ban
+  echo '# Fail2Ban configuration file
+#
+# Author: Yannic Arnoux
+#         Based on sendmail-buffered written by Cyril Jaquier
+#
+#
+
+[INCLUDES]
+
+before = sendmail-common.conf
+
+[Definition]
+
+# Option:  actionstart
+# Notes.:  command executed once at the start of Fail2Ban.
+# Values:  CMD
+#
+actionstart = printf %%b "Subject: [Fail2Ban] <name>: started on `uname -n`
+              From: <sendername> <<sender>>
+              To: <dest>\n
+              Hi,\n
+              The jail <name> has been started successfully.\n
+              Regards,\n
+              Fail2Ban" | /usr/sbin/sendmail -f <sender> <dest>
+
+# Option:  actionstop
+# Notes.:  command executed once at the end of Fail2Ban
+# Values:  CMD
+#
+actionstop = if [ -f <tmpfile> ]; then
+                 printf %%b "Subject: [Fail2Ban] Report from `uname -n`
+                 From: <sendername> <<sender>>
+                 To: <dest>\n
+                 Hi,\n
+                 These hosts have been banned by Fail2Ban.\n
+                 `cat <tmpfile>`
+                 \n,Regards,\n
+                 Fail2Ban" | /usr/sbin/sendmail -f <sender> <dest>
+                 rm <tmpfile>
+             fi
+             printf %%b "Subject: [Fail2Ban] <name>: stopped  on `uname -n`
+             From: Fail2Ban <<sender>>
+             To: <dest>\n
+             Hi,\n
+             The jail <name> has been stopped.\n
+             Regards,\n
+             Fail2Ban" | /usr/sbin/sendmail -f <sender> <dest>
+
+# Option:  actioncheck
+# Notes.:  command executed once before each actionban command
+# Values:  CMD
+#
+actioncheck =
+
+# Option:  actionban
+# Notes.:  command executed when banning an IP. Take care that the
+#          command is executed with Fail2Ban user rights.
+# Tags:    See jail.conf(5) man page
+# Values:  CMD
+#
+actionban = printf %%b "`date`: <name> ban <ip> after <failures> failure(s)\n" >> <tmpfile>
+            if [ -f <mailflag> ]; then
+                printf %%b "Subject: [Fail2Ban] Report from `uname -n`
+                From: <sendername> <<sender>>
+                To: <dest>\n
+                Hi,\n
+                These hosts have been banned by Fail2Ban.\n
+                `cat <tmpfile>`
+                \n,Regards,\n
+                Fail2Ban" | /usr/sbin/sendmail -f <sender> <dest>
+                rm <tmpfile>
+                rm <mailflag>
+            fi
+
+# Option:  actionunban
+# Notes.:  command executed when unbanning an IP. Take care that the
+#          command is executed with Fail2Ban user rights.
+# Tags:    See jail.conf(5) man page
+# Values:  CMD
+#
+actionunban =
+
+[Init]
+
+# Default name of the chain
+#
+name = default
+
+# Default temporary file
+#
+tmpfile = /var/run/fail2ban/tmp-mail.txt
+
+# Default flag file
+#
+mailflag = /var/run/fail2ban/mail.flag' > /etc/fail2ban/action.d/sendmail-cron.conf
+
+  # Ajout d'une règle cron pour mail automatique
+  crontab -l > /tmp/crontab.tmp
+  echo "@daily touch /var/run/fail2ban/mail.flag" >> /tmp/crontab.tmp
+  crontab /tmp/crontab.tmp
+  rm /tmp/crontab.tmp
+
+  echo "
+[DEFAULT]
+destemail = $email" >> /etc/fail2ban/jail.local
+  echo 'action_mwlc = %(banaction)s[name=%(__name__)s, port="%(port)s", protocol="%(protocol)s", chain="%(chain)s"]
+            %(mta)s-cron[name=%(__name__)s, dest="%(destemail)s", logpath=%(logpath)s, chain="%(chain)s", sendername="%(sendername)s"] action = %(action_mwlc)s' >> /etc/fail2ban/jail.local
 
   systemctl restart fail2ban
   }
@@ -1729,7 +1864,7 @@ Security_app()
       sshport=""
     fi
     done
-    sed -i "s/ Port 22/Port $sshport/g" /etc/ssh/sshd_config
+    sed -i "5 s/Port 22/Port $sshport/g" /etc/ssh/sshd_config
     dialog --backtitle "Installation du site web de Cairn devices" --title "Changement port SSH" \
   --ok-label "Next" --msgbox "Le port SSH à été changé pour éviter les attaques automatiques. Veuillez en prendre note. \nNouveau port : $sshport   \nPour accéder au serveur en ssh : ssh -p$sshport $USER@$domainName" 9 66
   }
@@ -1812,7 +1947,7 @@ Cleanning()
   echo -e "Cleaning .............\033[32mDone\033[00m"
   echo "We will now reboot your server"
   sleep 5
-#  reboot
+  reboot
 }
 
 #######################
