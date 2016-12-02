@@ -1619,10 +1619,10 @@ Security_app()
   mail_SSH()
   {
      # Send mail when someone is succefully connected in SSH
-    echo 'ip=`echo $SSH_CONNECTION | cut -d " " -f 1`
-hostname=`hostname`
-Date=$(date)
-echo "User $USER just logged in from $ip at $Date" | mail -s "SSH Login" $email &' >>  /etc/ssh/sshrc
+    echo "ip=\`echo \$SSH_CONNECTION | cut -d \" \" -f 1\`
+hostname=\`hostname\`
+Date=\$(date)
+echo \"User \$USER just logged in from \$ip at \$Date\" | mail -s \"SSH Login\" $email &" >>  /etc/ssh/sshrc
   }
 
   Install_modSecurity()
@@ -2005,7 +2005,7 @@ done
 pass=$(echo -n $passnohash | sha256sum | sed 's/  -//g')
 passnohash="0"
   
-domainName =""
+domainName=""
 # Ask for domain name
 while [ "$domainName" == "" ]      
 do
