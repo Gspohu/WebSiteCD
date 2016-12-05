@@ -3,6 +3,9 @@
 # Error log
 exec 2> >(tee -a error.log)
 
+# Variable declaration
+itscert="no"
+
 #####################
 ###   Function declaration  ###
 #####################
@@ -1272,6 +1275,8 @@ Security_app()
     systemctl restart opendkim
     systemctl restart opendmarc
     systemctl restart postgrey
+
+    itscert="yes"
   }  
 
 
@@ -1961,6 +1966,49 @@ destemail = $email" >> /etc/fail2ban/jail.local
 
 }
 
+ItsCert()
+{
+  if [ "$itcert" = "no" ]
+  then
+    # Install OpenSSL
+    apt-get -y install openssl
+
+    # Creation of private key
+    cd /etc/ssl/
+    openssl genrsa -out mailserver.key 4096
+
+    # Ask for certificat signature
+    openssl req -new -key mailserver.key -out mailserver.csr
+
+    # Create certificat
+    openssl x509 -req -days 365 -in mailserver.csr -signkey mailserver.key -out mailserver.crt
+    cd ~
+
+    # Put certificat in conf file
+    sed -i "s/\/etc\/letsencrypt\/live\/$domainName\/cert.pem/\/etc\/ssl\/mailserver.crt/g" /etc/postfix/main.cf
+    sed -i "s/\/etc\/letsencrypt\/live\/$domainName\/fullchain.pem/\/etc\/ssl\/mailserver.csr/g" /etc/postfix/main.cf
+    sed -i "s/\/etc\/letsencrypt\/live\/$domainName\/privkey.pem/\/etc\/ssl\/mailserver.key/g" /etc/postfix/main.cf
+    sed -i "s/\/etc\/letsencrypt\/live\/$domainName\/fullchain.pem/\/etc\/ssl\/mailserver.csr/g" /etc/dovecot/conf.d/10-ssl.conf
+    sed -i "s/\/etc\/letsencrypt\/live\/$domainName\/privkey.pem/\/etc\/ssl\/mailserver.key/g" /etc/dovecot/conf.d/10-ssl.conf
+
+    # Ajout d'une règle cron pour renouveller automatique le certificat
+    crontab -l > /tmp/crontab.tmp 
+    echo "0 0 1 1 * openssl x509 -req -days 365 -in mailserver.csr -signkey mailserver.key -out mailserver.crt" >> /tmp/crontab.tmp
+    crontab /tmp/crontab.tmp
+    rm /tmp/crontab.tmp
+
+    systemctl restart apache2
+    systemctl restart postfix
+    systemctl restart dovecot
+    systemctl restart opendkim
+    systemctl restart opendmarc
+    systemctl restart postgrey
+
+    echo -e "Auto cert .............\033[32mDone\033[00m"
+
+  fi
+}
+
 Cleanning()
 {
   apt-get -y autoremove
@@ -2031,8 +2079,8 @@ then
   Install_Rainloop
   Install_Postgrey
   Install_WebsiteCD
-  Lets_cert
   Security_app
+  ItsCert
   Cleanning
 elif [ "$choix" = "Serveur mail" ]
 then
@@ -2043,6 +2091,6 @@ then
   Install_mail_server
   Install_Rainloop
   Install_Postgrey
-  Lets_cert
+  ItsCert
   Cleanning
 fi

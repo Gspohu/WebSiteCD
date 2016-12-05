@@ -51,28 +51,28 @@
                 <h4>Portfolio item 1<br>
                 <span>see detail</span>
                 </h4>
-                <a href="#"><img src="img/portfolio1.jpg" alt="item1"></a>
+                <a href="#"><img src="images/portfolio1.jpg" alt="item1"></a>
             </div>
             
             <div class="fourths_portfolio">
                 <h4>Portfolio item 2<br>
                 <span>see detail</span>
                 </h4>
-                <a href="#"><img src="img/portfolio2.jpg" alt="item2"></a>
+                <a href="#"><img src="images/portfolio2.jpg" alt="item2"></a>
             </div>
             
             <div class="fourths_portfolio">
                 <h4>Portfolio item 3<br>
                 <span>see detail</span>
                 </h4>
-                <a href="#"><img src="img/portfolio3.jpg" alt="item3"></a>
+                <a href="#"><img src="images/portfolio3.jpg" alt="item3"></a>
             </div>
             
             <div class="fourths_portfolio">
                 <h4>Portfolio item 4<br>
                 <span>see detail</span>
                 </h4>
-                <a href="#"><img src="img/portfolio4.jpg" alt="item4"></a>
+                <a href="#"><img src="images/portfolio4.jpg" alt="item4"></a>
             </div>
             
             <hr class="cleanit">

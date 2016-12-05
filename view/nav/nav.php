@@ -1,7 +1,7 @@
     <div id="header">
         <div id="header_in">
         
-        <h1 class=titleLogoName><a href="index.html"><img src="img/logo.png" alt="Cairn Devices"/></a> <a href="index.html">Cairn Devices</a></h1>
+        <h1 class=titleLogoName><a href="index.html"><img src="images/logo.png" alt="Cairn Devices"/></a> <a href="index.html">Cairn Devices</a></h1>
         
         <div id="menu">
          <ul>
