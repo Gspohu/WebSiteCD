@@ -1,7 +1,7 @@
 <?php
 
 #Récupération des identifiants et mots de passes
-$secureAccess = fopen('/var/www/CairnGit/.htpasswd', 'r+');
+$secureAccess = fopen('/var/www/CairnDevices/.htpasswd', 'r+');
 
 $identification = fgets($secureAccess);
 $password = fgets($secureAccess);

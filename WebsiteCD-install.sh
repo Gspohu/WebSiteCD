@@ -1186,7 +1186,7 @@ Install_WebsiteCD()
   echo "ServerName  $domainName" >> /etc/apache2/sites-available/CairnDevices.conf
   echo "ServerAlias  $domainName" >> /etc/apache2/sites-available/CairnDevices.conf
   echo "DocumentRoot /var/www/CairnDevices/" >> /etc/apache2/sites-available/CairnDevices.conf
-  echo "php_admin_value open_basedir /var/www/CairnDevices/" >> /etc/apache2/sites-available/CairnDevices.conf
+  echo "php_admin_value open_basedir /var/www/CairnDevices/:/usr/share/phpmyadmin/:/etc/phpmyadmin/:/var/lib/phpmyadmin/:/usr/share/php/php-gettext/:/usr/share/javascript/:/usr/share/php/tcpdf/:/usr/share/doc/phpmyadmin/:/usr/share/php/phpseclib/" >> /etc/apache2/sites-available/CairnDevices.conf
   echo "<Directory /var/www/CairnDevices/>" >> /etc/apache2/sites-available/CairnDevices.conf
   echo "Options Indexes FollowSymLinks" >> /etc/apache2/sites-available/CairnDevices.conf
   echo "AllowOverride all" >> /etc/apache2/sites-available/CairnDevices.conf
@@ -1225,33 +1225,6 @@ Install_WebsiteCD()
   sleep 4
 }
   
-Lets_cert()
-{  
-  # Configuration letsencrypt cerbot
-  apt-get -y install python-letsencrypt-apache
-  #letsencrypt --apache
-  letsencrypt --apache -d $domainName -d rainloop.$domainName  -d postfixadmin.$domainName 
-  echo -e "Installation de let's encrypt.......\033[32mDone\033[00m"
-  sleep 4
-  
-  # Redirect all http to https
-  sed -i "s/<\/Directory>/<\/Directory>\nRedirect permanent \/ https:\/\/$domainName\//g" /etc/apache2/sites-available/CairnDevices.conf
-  sed -i "s/<\/Directory>/<\/Directory>\nRedirect permanent \/ https:\/\/postfixadmin.$domainName\//g" /etc/apache2/sites-available/postfixadmin.conf
-  sed -i "s/<\/Directory>/<\/Directory>\nRedirect permanent \/ https:\/\/rainloop.$domainName\//g" /etc/apache2/sites-available/rainloop.conf
-  
-  # Ajout d'une règle cron pour renouveller automatique le certificat
-  crontab -l > /tmp/crontab.tmp 
-  echo "* * * 2 * letsencrypt renew" >> /tmp/crontab.tmp
-  crontab /tmp/crontab.tmp
-  rm /tmp/crontab.tmp
-
-  systemctl restart apache2
-  systemctl restart postfix
-  systemctl restart dovecot
-  systemctl restart opendkim
-  systemctl restart opendmarc
-  systemctl restart postgrey
-}  
 
 Security_app()
 {
@@ -1263,12 +1236,44 @@ Security_app()
     # Install dependency
     apt-get -y install mailutils
 
-    # Mail
-    dialog --backtitle "Cairngit installation" --title "Email for security reports"\
-    --inputbox "/!\\ Should be external of this server /!\\" 7 60 2> $FICHTMP
-    email=`cat $FICHTMP`
+    email=""
+    # Ask for email adresse for security report
+    while [ "$email" == "" ]      
+    do
+      dialog --backtitle "Cairngit installation" --title "Email for security reports"\
+      --inputbox "/!\\ Should be external of this server /!\\" 7 60 2> $FICHTMP
+      email=`cat $FICHTMP`
+    done
     hostname=$(hostname)
   }
+
+  Lets_cert()
+  {  
+    # Configuration letsencrypt cerbot
+    apt-get -y install python-letsencrypt-apache
+    letsencrypt --apache  --email $email -d $domainName -d rainloop.$domainName  -d postfixadmin.$domainName 
+    echo -e "Installation de let's encrypt.......\033[32mDone\033[00m"
+    sleep 4
+  
+    # Redirect all http to https
+    sed -i "s/<\/Directory>/<\/Directory>\nRedirect permanent \/ https:\/\/$domainName\//g" /etc/apache2/sites-available/CairnDevices.conf
+    sed -i "s/<\/Directory>/<\/Directory>\nRedirect permanent \/ https:\/\/postfixadmin.$domainName\//g" /etc/apache2/sites-available/postfixadmin.conf
+    sed -i "s/<\/Directory>/<\/Directory>\nRedirect permanent \/ https:\/\/rainloop.$domainName\//g" /etc/apache2/sites-available/rainloop.conf
+  
+    # Ajout d'une règle cron pour renouveller automatique le certificat
+    crontab -l > /tmp/crontab.tmp 
+    echo "* * * 2 * letsencrypt renew" >> /tmp/crontab.tmp
+    crontab /tmp/crontab.tmp
+    rm /tmp/crontab.tmp
+
+    systemctl restart apache2
+    systemctl restart postfix
+    systemctl restart dovecot
+    systemctl restart opendkim
+    systemctl restart opendmarc
+    systemctl restart postgrey
+  }  
+
 
   Check_rootkits()
   {
@@ -1932,7 +1937,8 @@ destemail = $email" >> /etc/fail2ban/jail.local
   "Apache" "Hide apache signature" off \
   "Fail2ban" "Install fail2ban rules W00t, Dos/DDos, SSH/SASL" off \
   "Unattended Upgrades" "Install Unattended Upgrade" off \
-  "Sys protection" "DOS/DDOS protection, martian log, ICMP" off 2> $FICHTMP
+  "Sys protection" "DOS/DDOS protection, martian log, ICMP" off\
+  "SSL" "SSL certification, with let's encrypt" off 2> $FICHTMP
 
   if [ $? = 0 ]
   then
@@ -1947,6 +1953,7 @@ destemail = $email" >> /etc/fail2ban/jail.local
   "Fail2ban") Install_Fail2ban ;;
   "Unattended Upgrades") Install_unattendedupgrades ;;
   "Sys protection") DOSDDOSOtherattacks_protection ;;
+  "SSL") Lets_cert ;;
   esac
   done
   else exit 0
