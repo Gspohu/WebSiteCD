@@ -1930,6 +1930,70 @@ destemail = $email" >> /etc/fail2ban/jail.local
     apt-get -y install apparmor apparmor-profiles apparmor-utils
   }
 
+  htpasswd_protection()
+  {
+    # Phpmyadmin htpasswd protection
+    echo "AuthUserFile /usr/share/phpmyadmin/.htpasswd
+AuthGroupFile /dev/null
+AuthName \"Restricted access\"
+AuthType Basic
+require valid-user" >> /usr/share/phpmyadmin/.htaccess
+
+    htpasswd -bcB -C 8 /usr/share/phpmyadmin/.htpasswd $email $passnohash
+ 
+    # Explain how to access to phpmyadmin
+    dialog --backtitle "Installation du site web de Cairn devices" --title "Htpasswd protection" \
+    --ok-label "Next" --msgbox "
+In order to access to phpmyadmin you have to go to this url :		
+https://$domainName/phpmyadmin
+
+ID : $email
+Password : Your password installation" 10 70
+
+    # Rainloop ?admin htpasswd protection
+    apacheconf="<Location rainloop.$domainName/?admin>
+    AuthUserFile /var/www/rainloop/.htpasswd
+    AuthGroupFile /dev/null
+    AuthName  \"Restricted access\"
+    AuthType Basic
+    require valid-user
+  </Location>"
+
+    sed -i "s/<\/Directory>/<\/Directory>\n$apacheconf/g" /etc/apache2/sites-available/rainloop.conf
+
+    htpasswd -bcB -C 8 /var/www/rainloop/.htpasswd $email $passnohash
+
+    # Explain how to access to rainloop administration panel
+    dialog --backtitle "Installation du site web de Cairn devices" --title "Htpasswd protection" \
+    --ok-label "Next" --msgbox "
+In order to access to the admin panel of rainloop you have to go to this url :		
+https://rainloop.$domainName/?admin
+
+ID : $email
+Password : Your password installation" 11 70
+
+    # Postfixadmin htpasswd protection
+    echo "AuthUserFile /var/www/postfixadmin/.htpasswd
+AuthGroupFile /dev/null
+AuthName \"Restricted access\"
+AuthType Basic
+require valid-user" >> /var/www/postfixadmin/.htaccess
+
+    htpasswd -bcB -C 8 /var/www/postfixadmin/.htpasswd $email $passnohash
+
+    # Explain how to access to postfixadmin
+    dialog --backtitle "Installation du site web de Cairn devices" --title "Htpasswd protection" \
+    --ok-label "Next" --msgbox "
+In order to access to postfixadmin you have to go to this url :		
+https://postfixadmin.$domainName/
+
+ID : $email
+Password : Your password installation" 10 70
+
+    systemctl restart apache2
+
+  }
+
   Mail_adress
 
   dialog --backtitle "Installation of security apps" --title "Choose security apps" \
@@ -1943,6 +2007,7 @@ destemail = $email" >> /etc/fail2ban/jail.local
   "Fail2ban" "Install fail2ban rules W00t, Dos/DDos, SSH/SASL" off \
   "Unattended Upgrades" "Install Unattended Upgrade" off \
   "Sys protection" "DOS/DDOS protection, martian log, ICMP" off\
+  "Htpasswd" "Activate htpasswd protection on admin pages" off\
   "SSL" "SSL certification, with let's encrypt" off 2> $FICHTMP
 
   if [ $? = 0 ]
@@ -1958,17 +2023,17 @@ destemail = $email" >> /etc/fail2ban/jail.local
   "Fail2ban") Install_Fail2ban ;;
   "Unattended Upgrades") Install_unattendedupgrades ;;
   "Sys protection") DOSDDOSOtherattacks_protection ;;
+  "Htpasswd") htpasswd_protection ;;
   "SSL") Lets_cert ;;
   esac
   done
   else exit 0
   fi
-
 }
 
 ItsCert()
 {
-  if [ "$itcert" = "no" ]
+  if [ "$itscert" = "no" ]
   then
     # Install OpenSSL
     apt-get -y install openssl
@@ -2005,7 +2070,6 @@ ItsCert()
     systemctl restart postgrey
 
     echo -e "Auto cert .............\033[32mDone\033[00m"
-
   fi
 }
 
