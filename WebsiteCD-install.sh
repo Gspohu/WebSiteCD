@@ -1932,14 +1932,15 @@ destemail = $email" >> /etc/fail2ban/jail.local
 
   htpasswd_protection()
   {
-    # Phpmyadmin htpasswd protection
-    echo "AuthUserFile /usr/share/phpmyadmin/.htpasswd
-AuthGroupFile /dev/null
-AuthName \"Restricted access\"
-AuthType Basic
-require valid-user" >> /usr/share/phpmyadmin/.htaccess
+    # Apache2 mod
+    a2enmod authz_groupfile
 
-    htpasswd -bcB -C 8 /usr/share/phpmyadmin/.htpasswd $email $passnohash
+    systemctl restart apache2
+
+    # Phpmyadmin htpasswd protection
+    sed -i "s/<\/Directory>/<\/Directory>\n<Location \/phpmyadmin>\n AuthUserFile \/var\/www\/CairnDevices\/.htpasswd\n AuthGroupFile \/dev\/null\n AuthName \"Restricted access\"\n AuthType Basic\n require valid-user\n<\/Location>\n/g" /etc/apache2/sites-available/CairnDevices.conf
+
+    htpasswd -bcB -C 8 /var/www/CairnDevices/.htpasswd $email $passnohash
  
     # Explain how to access to phpmyadmin
     dialog --backtitle "Installation du site web de Cairn devices" --title "Htpasswd protection" \
@@ -1951,15 +1952,7 @@ ID : $email
 Password : Your password installation" 10 70
 
     # Rainloop ?admin htpasswd protection
-    apacheconf="<Location rainloop.$domainName/?admin>
-    AuthUserFile /var/www/rainloop/.htpasswd
-    AuthGroupFile /dev/null
-    AuthName  \"Restricted access\"
-    AuthType Basic
-    require valid-user
-  </Location>"
-
-    sed -i "s/<\/Directory>/<\/Directory>\n$apacheconf/g" /etc/apache2/sites-available/rainloop.conf
+    sed -i "s/<\/Directory>/<\/Directory>\n<Location \/\?admin>\n AuthUserFile \/var\/www\/rainloop\/.htpasswd\n AuthGroupFile \/dev\/null\n AuthName \"Restricted access\"\n AuthType Basic\n require valid-user\n<\/Location>\n/g" /etc/apache2/sites-available/rainloop.conf
 
     htpasswd -bcB -C 8 /var/www/rainloop/.htpasswd $email $passnohash
 
