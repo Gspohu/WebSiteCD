@@ -44,12 +44,12 @@ Install_Apache2()
   
 Install_Mysql()
 {
-  echo "mysql-server mysql-server/root_password password $pass" | sudo debconf-set-selections
-  echo "mysql-server mysql-server/root_password_again password $pass" | sudo debconf-set-selections
+  echo "mysql-server mysql-server/root_password password $internalPass" | sudo debconf-set-selections
+  echo "mysql-server mysql-server/root_password_again password $internalPass" | sudo debconf-set-selections
   apt-get -y install mysql-server
-  mysql -u root -p${pass} -e "DELETE FROM mysql.user WHERE User=''"
-  mysql -u root -p${pass} -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%'"
-  mysql -u root -p${pass} -e "FLUSH PRIVILEGES"
+  mysql -u root -p${internalPass} -e "DELETE FROM mysql.user WHERE User=''"
+  mysql -u root -p${internalPass} -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%'"
+  mysql -u root -p${internalPass} -e "FLUSH PRIVILEGES"
   systemctl restart apache2
   echo -e "Installation de MySQL.......\033[32mDone\033[00m"
   sleep 4
@@ -67,9 +67,9 @@ Install_phpmyadmin()
 {
   apt-get -y install php-mbstring php-gettext
   echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | sudo debconf-set-selections
-  echo "phpmyadmin phpmyadmin/app-password-confirm password $pass" | sudo debconf-set-selections
-  echo "phpmyadmin phpmyadmin/mysql/admin-pass password $pass" | sudo debconf-set-selections
-  echo "phpmyadmin phpmyadmin/mysql/app-pass password $pass" | sudo debconf-set-selections
+  echo "phpmyadmin phpmyadmin/app-password-confirm password $adminPass" | sudo debconf-set-selections
+  echo "phpmyadmin phpmyadmin/mysql/admin-pass password $internalPass" | sudo debconf-set-selections
+  echo "phpmyadmin phpmyadmin/mysql/app-pass password $adminPass" | sudo debconf-set-selections
   echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | sudo debconf-set-selections
   apt-get -y install phpmyadmin
   phpenmod mcrypt
@@ -103,10 +103,10 @@ $domainName.	600	SPF	\"v=spf1 a mx ptr ip4:ipv4 of your server include:_spf.goog
   apt-get -y install postfix postfix-mysql postfix-policyd-spf-python
   
   # Create database
-  mysql -u root -p${pass} -e "CREATE DATABASE postfix;"
-  mysql -u root -p${pass} -e "CREATE USER 'postfix'@'localhost' IDENTIFIED BY '$pass';"
-  mysql -u root -p${pass} -e "GRANT USAGE ON *.* TO 'postfix'@'localhost';"
-  mysql -u root -p${pass} -e "GRANT ALL PRIVILEGES ON postfix.* TO 'postfix'@'localhost';"
+  mysql -u root -p${internalPass} -e "CREATE DATABASE postfix;"
+  mysql -u root -p${internalPass} -e "CREATE USER 'postfix'@'localhost' IDENTIFIED BY '$internalPass';"
+  mysql -u root -p${internalPass} -e "GRANT USAGE ON *.* TO 'postfix'@'localhost';"
+  mysql -u root -p${internalPass} -e "GRANT ALL PRIVILEGES ON postfix.* TO 'postfix'@'localhost';"
   
   # Install Postfixadmin
   wget https://downloads.sourceforge.net/project/postfixadmin/postfixadmin/postfixadmin-3.0/postfixadmin-3.0.tar.gz
@@ -118,10 +118,10 @@ $domainName.	600	SPF	\"v=spf1 a mx ptr ip4:ipv4 of your server include:_spf.goog
   
   # Configuration of Postfixadmin
   sed -i "25 s/false/true/g" /var/www/postfixadmin/config.inc.php
-  pass_MD5=$(echo -n $pass | md5sum | sed 's/  -//g')
-  pass_SHA1=$(echo -n $pass_MD5:$pass | sha1sum | sed 's/  -//g')
+  pass_MD5=$(echo -n $adminPass | md5sum | sed 's/  -//g')
+  pass_SHA1=$(echo -n $pass_MD5:$adminPass | sha1sum | sed 's/  -//g')
   sed -i "30 s/changeme/$pass_MD5:$pass_SHA1/g" /var/www/postfixadmin/config.inc.php
-  sed -i "87 s/postfixadmin/$pass/g" /var/www/postfixadmin/config.inc.php
+  sed -i "87 s/postfixadmin/$internalPass/g" /var/www/postfixadmin/config.inc.php
   sed -i "120 s/''/'admin@$domainName'/g" /var/www/postfixadmin/config.inc.php
   sed -i "198 s/change-this-to-your.domain.tld/$domainName/g" /var/www/postfixadmin/config.inc.php
   sed -i "199 s/change-this-to-your.domain.tld/$domainName/g" /var/www/postfixadmin/config.inc.php
@@ -154,7 +154,7 @@ $domainName.	600	SPF	\"v=spf1 a mx ptr ip4:ipv4 of your server include:_spf.goog
   
   cd /var/www/postfixadmin/
   
-  php -f /var/www/postfixadmin/setup.php "form=createadmin&setup_password=$pass&username=admin@$domainName&password=$pass&password2=$pass"
+  php -f /var/www/postfixadmin/setup.php "form=createadmin&setup_password=$adminPass&username=admin@$domainName&password=$adminPass&password2=$adminPass"
   
   cd ~
   
@@ -276,19 +276,19 @@ $domainName.	600	SPF	\"v=spf1 a mx ptr ip4:ipv4 of your server include:_spf.goog
   # Configuration of Postfix in order to interact with MySQL
   echo "hosts = 127.0.0.1" > /etc/postfix/mysql-virtual-mailbox-domains.cf
   echo "user = postfix" >> /etc/postfix/mysql-virtual-mailbox-domains.cf
-  echo "password = $pass" >> /etc/postfix/mysql-virtual-mailbox-domains.cf
+  echo "password = $internalPass" >> /etc/postfix/mysql-virtual-mailbox-domains.cf
   echo "dbname = postfix" >> /etc/postfix/mysql-virtual-mailbox-domains.cf
   echo "query = SELECT domain FROM domain WHERE domain='%s' and backupmx = 0 and active = 1" >> /etc/postfix/mysql-virtual-mailbox-domains.cf
   
   echo "hosts = 127.0.0.1" > /etc/postfix/mysql-virtual-mailbox-maps.cf
   echo "user = postfix" >> /etc/postfix/mysql-virtual-mailbox-maps.cf
-  echo "password = $pass" >> /etc/postfix/mysql-virtual-mailbox-maps.cf
+  echo "password = $internalPass" >> /etc/postfix/mysql-virtual-mailbox-maps.cf
   echo "dbname = postfix" >> /etc/postfix/mysql-virtual-mailbox-maps.cf
   echo "query = SELECT maildir FROM mailbox WHERE username='%s' AND active = 1" >> /etc/postfix/mysql-virtual-mailbox-maps.cf
   
   echo "hosts = 127.0.0.1" > /etc/postfix/mysql-virtual-alias-maps.cf
   echo "user = postfix" >> /etc/postfix/mysql-virtual-alias-maps.cf
-  echo "password = $pass" >> /etc/postfix/mysql-virtual-alias-maps.cf
+  echo "password = $internalPass" >> /etc/postfix/mysql-virtual-alias-maps.cf
   echo "dbname = postfix" >> /etc/postfix/mysql-virtual-alias-maps.cf
   echo "query = SELECT goto FROM alias WHERE address='%s' AND active = 1" >> /etc/postfix/mysql-virtual-alias-maps.cf
   
@@ -510,7 +510,7 @@ $domainName.	600	SPF	\"v=spf1 a mx ptr ip4:ipv4 of your server include:_spf.goog
   
   # Configuration of dovecot-sql.conf.ext
   echo "driver = mysql" > /etc/dovecot/dovecot-sql.conf.ext
-  echo "connect = host=127.0.0.1 dbname=postfix user=postfix password=$pass" >> /etc/dovecot/dovecot-sql.conf.ext
+  echo "connect = host=127.0.0.1 dbname=postfix user=postfix password=$internalPass" >> /etc/dovecot/dovecot-sql.conf.ext
   echo "" >> /etc/dovecot/dovecot-sql.conf.ext
   echo "default_pass_scheme = MD5-CRYPT" >> /etc/dovecot/dovecot-sql.conf.ext
   echo "" >> /etc/dovecot/dovecot-sql.conf.ext
@@ -792,7 +792,7 @@ Install_Rainloop()
   echo 'type = "mysql"' >> /var/www/rainloop/data/_data_/_default_/configs/application.ini
   echo 'pdo_dsn = "mysql:host=127.0.0.1;port=3306;dbname=rainloop"' >> /var/www/rainloop/data/_data_/_default_/configs/application.ini
   echo 'pdo_user = "rainloop"' >> /var/www/rainloop/data/_data_/_default_/configs/application.ini
-  echo "pdo_password = \"$pass\"" >> /var/www/rainloop/data/_data_/_default_/configs/application.ini
+  echo "pdo_password = \"$internalPass\"" >> /var/www/rainloop/data/_data_/_default_/configs/application.ini
   echo 'suggestions_limit = 30' >> /var/www/rainloop/data/_data_/_default_/configs/application.ini
   echo '' >> /var/www/rainloop/data/_data_/_default_/configs/application.ini
   echo '[security]' >> /var/www/rainloop/data/_data_/_default_/configs/application.ini
@@ -1091,10 +1091,10 @@ Install_Rainloop()
   cd ~
 
   # Create database
-  mysql -u root -p${pass} -e "CREATE DATABASE rainloop;"
-  mysql -u root -p${pass} -e "CREATE USER 'rainloop'@'localhost' IDENTIFIED BY '$pass';"
-  mysql -u root -p${pass} -e "GRANT USAGE ON *.* TO 'rainloop'@'localhost';"
-  mysql -u root -p${pass} -e "GRANT ALL PRIVILEGES ON rainloop.* TO rainloop@localhost IDENTIFIED BY '$pass';"
+  mysql -u root -p${internalPass} -e "CREATE DATABASE rainloop;"
+  mysql -u root -p${internalPass} -e "CREATE USER 'rainloop'@'localhost' IDENTIFIED BY '$internalPass';"
+  mysql -u root -p${internalPass} -e "GRANT USAGE ON *.* TO 'rainloop'@'localhost';"
+  mysql -u root -p${internalPass} -e "GRANT ALL PRIVILEGES ON rainloop.* TO rainloop@localhost IDENTIFIED BY '$internalPass';"
   
   # Apache2 configuration for Rainloop		
   echo "<VirtualHost *:80>" > /etc/apache2/sites-available/rainloop.conf
@@ -1119,7 +1119,7 @@ Install_Rainloop()
   echo "include '/var/www/rainloop/index.php';" >> changeAdminPasswd.php
   echo "" >> changeAdminPasswd.php
   echo "\$oConfig = \RainLoop\Api::Config();" >> changeAdminPasswd.php
-  echo "\$oConfig->SetPassword('$pass');" >> changeAdminPasswd.php
+  echo "\$oConfig->SetPassword('$adminPass');" >> changeAdminPasswd.php
   echo "echo \$oConfig->Save() ? 'Done' : 'Error';" >> changeAdminPasswd.php
   echo "" >> changeAdminPasswd.php
   echo "?>" >> changeAdminPasswd.php
@@ -1206,23 +1206,23 @@ Install_WebsiteCD()
   # Creation of CairnDevices user
   USER="CairnDevices"
   echo "Creation of CairnDevices user"
-  useradd -p $pass -M -r -U $USER
+  useradd -p $internalPass -M -r -U $USER
   echo "Creation of ".${USER}." user" OK
   
   # Ajout de l'acces sécurisé
   echo "CairnDevices" > /var/www/CairnDevices/.htpasswd
-  echo $pass >> /var/www/CairnDevices/.htpasswd
+  echo $internalPass >> /var/www/CairnDevices/.htpasswd
   chmod 777 /var/www/CairnDevices/.htpasswd
   
   # Ajout des bases de données
-  mysql -u root -p${pass} -e "CREATE DATABASE CairnDevices;"
-  mysql -u root -p${pass} -e "GRANT ALL PRIVILEGES ON CairnDevices.* TO CairnDevices@localhost IDENTIFIED BY '$pass';"
-  mysql -h localhost -p${pass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Captcha.sql
-  mysql -h localhost -p${pass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Text_content.sql
-  mysql -h localhost -p${pass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Member.sql
-  mysql -h localhost -p${pass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Projects.sql
-  mysql -h localhost -p${pass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Colors.sql
-  mysql -h localhost -p${pass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Project_types.sql
+  mysql -u root -p${internalPass} -e "CREATE DATABASE CairnDevices;"
+  mysql -u root -p${internalPass} -e "GRANT ALL PRIVILEGES ON CairnDevices.* TO CairnDevices@localhost IDENTIFIED BY '$internalPass';"
+  mysql -h localhost -p${internalPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Captcha.sql
+  mysql -h localhost -p${internalPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Text_content.sql
+  mysql -h localhost -p${internalPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Member.sql
+  mysql -h localhost -p${internalPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Projects.sql
+  mysql -h localhost -p${internalPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Colors.sql
+  mysql -h localhost -p${internalPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Project_types.sql
   
   echo -e "Ajout des bases de données.......\033[32mDone\033[00m"
   sleep 4
@@ -1431,12 +1431,12 @@ Security_app()
   
   chown snort.snort /var/log/snort/barnyard2.waldo
   
-  mysql -u root -p${pass} -e "CREATE DATABASE snort;"
-  mysql -u root -p${pass} -e "CREATE USER 'snort'@'localhost' IDENTIFIED BY '$pass';"
-  mysql -u root -p${pass} -e "GRANT USAGE ON *.* TO 'snort'@'localhost';"
-  mysql -u root -p${pass} -e "GRANT ALL PRIVILEGES ON snort.* TO 'snort'@'localhost';"
+  mysql -u root -p${internalPass} -e "CREATE DATABASE snort;"
+  mysql -u root -p${internalPass} -e "CREATE USER 'snort'@'localhost' IDENTIFIED BY '$internalPass';"
+  mysql -u root -p${internalPass} -e "GRANT USAGE ON *.* TO 'snort'@'localhost';"
+  mysql -u root -p${internalPass} -e "GRANT ALL PRIVILEGES ON snort.* TO 'snort'@'localhost';"
   
-  echo "output database: log, mysql, user=snort password=$pass dbname=snort host=localhost" >> /etc/snort/barnyard2.conf
+  echo "output database: log, mysql, user=snort password=$internalPass dbname=snort host=localhost" >> /etc/snort/barnyard2.conf
   
   chmod o-r /etc/snort/barnyard2.conf
   
@@ -1554,12 +1554,12 @@ Security_app()
   sed -i s/"do_mysql (~> 0.10.6)"/"do_mysql (0.10.17)"/g /var/www/snorby/Gemfile.lock
   sed -i s/"do_mysql (0.10.6)"/"do_mysql (0.10.17)"/g /var/www/snorby/Gemfile.lock
   
-  mysql -u root -p${pass} -e "CREATE DATABASE snorby;"
-  mysql -u root -p${pass} -e "CREATE USER 'snorby'@'localhost' IDENTIFIED BY '$pass';"
-  mysql -u root -p${pass} -e "GRANT USAGE ON *.* TO 'snorby'@'localhost';"
-  mysql -u root -p${pass} -e "GRANT ALL PRIVILEGES ON snorby.* TO 'snorby'@'localhost';"
+  mysql -u root -p${internalPass} -e "CREATE DATABASE snorby;"
+  mysql -u root -p${internalPass} -e "CREATE USER 'snorby'@'localhost' IDENTIFIED BY '$internalPass';"
+  mysql -u root -p${internalPass} -e "GRANT USAGE ON *.* TO 'snorby'@'localhost';"
+  mysql -u root -p${internalPass} -e "GRANT ALL PRIVILEGES ON snorby.* TO 'snorby'@'localhost';"
   
-  sed -i s/"password: \".*\""/"password: \"$pass\""/g /var/www/snorby/config/database.yml
+  sed -i s/"password: \".*\""/"password: \"$internalPass\""/g /var/www/snorby/config/database.yml
   
   apt-get -y install libcurl4-openssl-dev libaprutil1-dev libapr1-dev apache2-dev
   
@@ -1593,7 +1593,7 @@ Security_app()
   systemctl restart apache2
   
   sed -i "s/output database: log, mysql, user=snort password=********** dbname=snort host=localhost/#output database: log, mysql, user=snort password=********** dbname=snort host=localhost/g" /etc/snort/barnyard2.conf
-  echo "output database: log, mysql, user=snorby password=$pass dbname=snorby host=localhost sensor_name=sensor1" >> /etc/snort/barnyard2.conf
+  echo "output database: log, mysql, user=snorby password=$internalPass dbname=snorby host=localhost sensor_name=sensor1" >> /etc/snort/barnyard2.conf
   
   systemctl restart barnyard2
   
@@ -2112,18 +2112,35 @@ passnohash="0"
 repassnohash="1"
 while [ "$passnohash" != "$repassnohash" ]      
 do
-dialog --backtitle "Installation du site web de Cairn Devices" --title "Choose the password for the installation" \
+dialog --backtitle "Installation du site web de Cairn Devices" --title "Choose the installation password" \
 --insecure --passwordbox "" 7 60 2> $FICHTMP
 passnohash=`cat $FICHTMP`
   
-dialog --backtitle "Installation du site web de Cairn Devices" --title "Retype the password for the installation" \
+dialog --backtitle "Installation du site web de Cairn Devices" --title "Retype the installation password" \
 --insecure --passwordbox "" 7 60 2> $FICHTMP
 repassnohash=`cat $FICHTMP`
 done
-  
-pass=$(echo -n $passnohash | sha256sum | sed 's/  -//g')
-passnohash="0"
-  
+
+salt=$(date +%T)$(( RANDOM % 100 ))
+passnohashsalt=$passnohash$salt  
+internalPass=$(echo -n $passnohashsalt | sha256sum | sed 's/  -//g')
+passnohashsalt="0"  
+repassnohash="0"
+
+repass="0"
+adminPass="1"
+while [ "$adminPass" != "$repass" ]      
+do
+dialog --backtitle "Installation du site web de Cairn Devices" --title "Choose the admin password" \
+--insecure --passwordbox "" 7 60 2> $FICHTMP
+adminPass=`cat $FICHTMP`
+
+dialog --backtitle "Installation du site web de Cairn Devices" --title "Retype the admin password" \
+--insecure --passwordbox "" 7 60 2> $FICHTMP
+repass=`cat $FICHTMP`
+done
+repass="0"
+
 domainName=""
 # Ask for domain name
 while [ "$domainName" == "" ]      
