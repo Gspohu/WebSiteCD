@@ -100,6 +100,8 @@ _dmarc.$domainName.	0	TXT	\"v=DMARC1; p=reject; rua=mailto:postmaster@$domainNam
 $domainName.	600	SPF	\"v=spf1 a mx ptr ip4:ipv4 of your server include:_spf.google.com ~all\"" 20 80	
 
   # Install Postfix
+  echo "postfix postfix/mailname string $domainName" | debconf-set-selections
+  echo "postfix postfix/main_mailer_type string 'Internet Site'" | debconf-set-selections
   apt-get -y install postfix postfix-mysql postfix-policyd-spf-python
   
   # Create database
@@ -1953,7 +1955,7 @@ Password : Your password installation" 10 70
 
     # Rainloop ?admin htpasswd protection
     sed -i "s/php\_admin\_value open\_basedir \/var\/www\/rainloop\//php\_admin\_value open\_basedir \/var\/www\/rainloop\/\nRewriteEngine On\nRewriteCond %{QUERY\_STRING} ^.*admin.*$\nRewriteRule (.*) - [E=AUTH\_NEEDED:true]/g" /etc/apache2/sites-available/rainloop.conf
-    sed -i "s/ AllowOverride All/  AllowOverride All\n  AuthUserFile \/var\/www\/rainloop\/.htpasswd\n  AuthGroupFile \/dev\/null\n  AuthName \"Restricted access\"\n  AuthType Basic\n  require valid-user\n  Order allow,deny\n  Allow from all\n  Deny from env=AUTH_NEEDED\n  Satisfy any/g" /etc/apache2/sites-available/rainloop.conf
+    sed -i "s/AllowOverride All/  AllowOverride All\n  AuthUserFile \/var\/www\/rainloop\/.htpasswd\n  AuthGroupFile \/dev\/null\n  AuthName \"Restricted access\"\n  AuthType Basic\n  require valid-user\n  Order allow,deny\n  Allow from all\n  Deny from env=AUTH_NEEDED\n  Satisfy any/g" /etc/apache2/sites-available/rainloop.conf
 
     htpasswd -bcB -C 8 /var/www/rainloop/.htpasswd $email $passnohash
 
@@ -2074,7 +2076,7 @@ Cleanning()
 
   # Update post reboot
   crontab -l > /tmp/crontab.tmp
-  echo "@reboot /srv/firstReboot.sh" >> /tmp/crontab.tmp
+  echo "@reboot bash /srv/firstReboot.sh" >> /tmp/crontab.tmp
   crontab /tmp/crontab.tmp
   rm /tmp/crontab.tmp
 
@@ -2084,7 +2086,7 @@ Cleanning()
   echo "apt-get -y update" >> /srv/firstReboot.sh
   echo "apt-get -y upgrade" >> /srv/firstReboot.sh
   echo "crontab -l > /tmp/crontab.tmp" >> /srv/firstReboot.sh
-  echo "sed -i \"s/@reboot \/srv\/firstReboot.sh//g\" /tmp/crontab.tmp" >> /srv/firstReboot.sh
+  echo "sed -i \"s/@reboot bash \/srv\/firstReboot.sh//g\" /tmp/crontab.tmp" >> /srv/firstReboot.sh
   echo "crontab /tmp/crontab.tmp" >> /srv/firstReboot.sh
   echo "rm /tmp/crontab.tmp" >> /srv/firstReboot.sh
 
