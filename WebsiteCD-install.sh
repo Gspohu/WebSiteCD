@@ -1709,7 +1709,7 @@ enabled = true
 port = ssh,sftp,$sshport
 filter = sshd
 logpath = /var/log/auth.log
-maxretry = 3
+maxretry = 6
 bantime = 1000
 
 [http-get-post-dos]
@@ -1952,7 +1952,8 @@ ID : $email
 Password : Your password installation" 10 70
 
     # Rainloop ?admin htpasswd protection
-    sed -i "s/<\/Directory>/<\/Directory>\n<Location \/\?admin>\n AuthUserFile \/var\/www\/rainloop\/.htpasswd\n AuthGroupFile \/dev\/null\n AuthName \"Restricted access\"\n AuthType Basic\n require valid-user\n<\/Location>\n/g" /etc/apache2/sites-available/rainloop.conf
+    sed -i "s/php\_admin\_value open\_basedir \/var\/www\/rainloop\//php\_admin\_value open\_basedir \/var\/www\/rainloop\/\nRewriteEngine On\nRewriteCond %{QUERY\_STRING} ^.*admin.*$\nRewriteRule (.*) - [E=AUTH\_NEEDED:true]/g" /etc/apache2/sites-available/rainloop.conf
+    sed -i "s/ AllowOverride All/  AllowOverride All\n  AuthUserFile \/var\/www\/rainloop\/.htpasswd\n  AuthGroupFile \/dev\/null\n  AuthName \"Restricted access\"\n  AuthType Basic\n  require valid-user\n  Order allow,deny\n  Allow from all\n  Deny from env=AUTH_NEEDED\n  Satisfy any/g" /etc/apache2/sites-available/rainloop.conf
 
     htpasswd -bcB -C 8 /var/www/rainloop/.htpasswd $email $passnohash
 
@@ -2070,6 +2071,23 @@ Cleanning()
 {
   apt-get -y autoremove
   echo -e "Cleaning .............\033[32mDone\033[00m"
+
+  # Update post reboot
+  crontab -l > /tmp/crontab.tmp
+  echo "@reboot /srv/firstReboot.sh" >> /tmp/crontab.tmp
+  crontab /tmp/crontab.tmp
+  rm /tmp/crontab.tmp
+
+  echo "#!/bin/bash" >> /srv/firstReboot.sh
+  echo "# Error log" >> /srv/firstReboot.sh
+  echo "exec 2> >(tee -a firstRebootError.log)" >> /srv/firstReboot.sh
+  echo "apt-get -y update" >> /srv/firstReboot.sh
+  echo "apt-get -y upgrade" >> /srv/firstReboot.sh
+  echo "crontab -l > /tmp/crontab.tmp" >> /srv/firstReboot.sh
+  echo "sed -i \"s/@reboot \/srv\/firstReboot.sh//g\" /tmp/crontab.tmp" >> /srv/firstReboot.sh
+  echo "crontab /tmp/crontab.tmp" >> /srv/firstReboot.sh
+  echo "rm /tmp/crontab.tmp" >> /srv/firstReboot.sh
+
   echo "We will now reboot your server"
   sleep 5
   reboot
