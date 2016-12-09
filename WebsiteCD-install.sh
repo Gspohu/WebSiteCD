@@ -138,7 +138,13 @@ $domainName.	600	SPF	\"v=spf1 a mx ptr ip4:ipv4 of your server include:_spf.goog
   echo "ServerName  postfixadmin.$domainName" >> /etc/apache2/sites-available/postfixadmin.conf
   echo "ServerAlias  postfixadmin.$domainName" >> /etc/apache2/sites-available/postfixadmin.conf
   echo "DocumentRoot /var/www/postfixadmin/" >> /etc/apache2/sites-available/postfixadmin.conf
+  echo "# Pass the default character set" >> /etc/apache2/sites-available/postfixadmin.conf
+  echo "AddDefaultCharset utf-8" >> /etc/apache2/sites-available/postfixadmin.conf
   echo "php_admin_value open_basedir /var/www/postfixadmin/" >> /etc/apache2/sites-available/postfixadmin.conf
+  echo "<FilesMatch "^\.">" >> /etc/apache2/sites-available/postfixadmin.conf
+  echo "    Order allow,deny" >> /etc/apache2/sites-available/postfixadmin.conf
+  echo "    Deny from all" >> /etc/apache2/sites-available/postfixadmin.conf
+  echo "</FilesMatch>" >> /etc/apache2/sites-available/postfixadmin.conf
   echo "<Directory /var/www/postfixadmin/>" >> /etc/apache2/sites-available/postfixadmin.conf
   echo "Options Indexes FollowSymLinks" >> /etc/apache2/sites-available/postfixadmin.conf
   echo "AllowOverride all" >> /etc/apache2/sites-available/postfixadmin.conf
@@ -1104,7 +1110,13 @@ Install_Rainloop()
   echo "ServerName rainloop.$domainName" >> /etc/apache2/sites-available/rainloop.conf
   echo "ServerAlias rainloop.$domainName" >> /etc/apache2/sites-available/rainloop.conf
   echo "DocumentRoot /var/www/rainloop/" >> /etc/apache2/sites-available/rainloop.conf
+  echo "# Pass the default character set" >> /etc/apache2/sites-available/rainloop.conf
+  echo "AddDefaultCharset utf-8" >> /etc/apache2/sites-available/rainloop.conf
   echo "php_admin_value open_basedir /var/www/rainloop/" >> /etc/apache2/sites-available/rainloop.conf
+  echo "<FilesMatch "^\.">" >> /etc/apache2/sites-available/rainloop.conf
+  echo "    Order allow,deny" >> /etc/apache2/sites-available/rainloop.conf
+  echo "    Deny from all" >> /etc/apache2/sites-available/rainloop.conf
+  echo "</FilesMatch>" >> /etc/apache2/sites-available/rainloop.conf
   echo "<Directory /var/www/rainloop/ >" >> /etc/apache2/sites-available/rainloop.conf
   echo "AllowOverride All" >> /etc/apache2/sites-available/rainloop.conf
   echo "</Directory>" >> /etc/apache2/sites-available/rainloop.conf
@@ -1164,13 +1176,13 @@ Install_Postgrey()
   echo "/^smtpd\d+\.orange\.fr$/" >> /etc/postgrey/whitelist_clients
   
   systemctl restart apache2
-  mkdir /var/run/postgrey
-  chown postgrey:postgrey /var/run/postgrey
-  sed -i 's/PIDFILE= \/var\/run\/$DAEMON_NAME.pid/PIDFILE=\/var\/run\/$DAEMON_NAME\/$DAEMON_NAME.pid/g' /etc/init.d/postgrey
-  systemctl stop postgrey
-  rm /var/run/postgrey.pid
-  systemctl daemon-reload
-  systemctl start postgrey
+  #mkdir /var/run/postgrey
+  #chown postgrey:postgrey /var/run/postgrey
+  #sed -i 's/PIDFILE= \/var\/run\/$DAEMON_NAME.pid/PIDFILE=\/var\/run\/$DAEMON_NAME\/$DAEMON_NAME.pid/g' /etc/init.d/postgrey
+  #systemctl stop postgrey
+  #rm /var/run/postgrey.pid
+  #systemctl daemon-reload
+  systemctl restart postgrey
 }
 
 Install_WebsiteCD()
@@ -1191,7 +1203,13 @@ Install_WebsiteCD()
   echo "ServerName  $domainName" >> /etc/apache2/sites-available/CairnDevices.conf
   echo "ServerAlias  $domainName" >> /etc/apache2/sites-available/CairnDevices.conf
   echo "DocumentRoot /var/www/CairnDevices/" >> /etc/apache2/sites-available/CairnDevices.conf
+  echo "# Pass the default character set" >> /etc/apache2/sites-available/CairnDevices.conf
+  echo "AddDefaultCharset utf-8" >> /etc/apache2/sites-available/CairnDevices.conf
   echo "php_admin_value open_basedir /var/www/CairnDevices/:/usr/share/phpmyadmin/:/etc/phpmyadmin/:/var/lib/phpmyadmin/:/usr/share/php/php-gettext/:/usr/share/javascript/:/usr/share/php/tcpdf/:/usr/share/doc/phpmyadmin/:/usr/share/php/phpseclib/" >> /etc/apache2/sites-available/CairnDevices.conf
+  echo "<FilesMatch "^\.">" >> /etc/apache2/sites-available/CairnDevices.conf
+  echo "    Order allow,deny" >> /etc/apache2/sites-available/CairnDevices.conf
+  echo "    Deny from all" >> /etc/apache2/sites-available/CairnDevices.conf
+  echo "</FilesMatch>" >> /etc/apache2/sites-available/CairnDevices.conf
   echo "<Directory /var/www/CairnDevices/>" >> /etc/apache2/sites-available/CairnDevices.conf
   echo "Options Indexes FollowSymLinks" >> /etc/apache2/sites-available/CairnDevices.conf
   echo "AllowOverride all" >> /etc/apache2/sites-available/CairnDevices.conf
@@ -1202,6 +1220,7 @@ Install_WebsiteCD()
   echo "CustomLog /var/www/CairnDevices/logs/access.log combined" >> /etc/apache2/sites-available/CairnDevices.conf
   echo "</VirtualHost>" >> /etc/apache2/sites-available/CairnDevices.conf
   
+  a2dissite 000-default.conf
   a2ensite CairnDevices
   systemctl restart apache2
 
@@ -1214,7 +1233,10 @@ Install_WebsiteCD()
   # Ajout de l'acces sécurisé
   echo "CairnDevices" > /var/www/CairnDevices/.htpasswd
   echo $internalPass >> /var/www/CairnDevices/.htpasswd
-  chmod 777 /var/www/CairnDevices/.htpasswd
+  chmod 644 /var/www/CairnDevices/.htpasswd
+  chown www-data:www-data /var/www/CairnDevices/.htpasswd
+  chmod 644 /var/www/CairnDevices/.htaccess
+  chown www-data:www-data /var/www/CairnDevices/.htaccess
   
   # Ajout des bases de données
   mysql -u root -p${internalPass} -e "CREATE DATABASE CairnDevices;"
@@ -1305,108 +1327,10 @@ Security_app()
   Install_SNORT()
   {
     interface=$(route | grep default | awk '{print $8}')
-  
-    apt-get -y install build-essential
-  
-    apt-get -y install libpcap-dev libpcre3-dev libdumbnet-dev autoconf
-  
-    mkdir ~/snort_src
-  
-    cd ~/snort_src/
-  
-    apt-get -y install bison flex
-  
-    wget https://www.snort.org/downloads/snort/daq-2.0.6.tar.gz
-  
-    tar -zxvf daq-2.0.6.tar.gz
-  
-    cd daq-2.0.6/
-  
-    ./configure
-  
-    make
-  
-    make install
-  
-    apt-get -y install zlib1g-dev liblzma-dev openssl libssl-dev
-  
-   cd ~/snort_src/
-  
-    wget https://www.snort.org/downloads/snort/snort-2.9.8.3.tar.gz
-  
-    tar -zxvf snort-2.9.8.3.tar.gz
-  
-    cd snort-2.9.8.3
-  
-    ./configure --enable-sourcefire
-  
-    make
-  
-    make install
-  
-    ldconfig
-  
-    ln -s /usr/local/bin/snort /usr/sbin/snort
-  
-    groupadd snort
-  
-    useradd snort -r -s /sbin/nologin -c SNORT_IDS -g snort
-  
-    mkdir -p /etc/snort/rules/iplists
-  
-    mkdir /etc/snort/preproc_rules
-  
-    mkdir /usr/local/lib/snort_dynamicrules
-  
-    mkdir /etc/snort/so_rules
-  
-    mkdir -p /var/log/snort/archived_logs
-  
-    touch /etc/snort/rules/iplists/black_list.rules
-  
-    touch /etc/snort/rules/iplists/white_list.rules
-  
-    touch /etc/snort/rules/local.rules
-  
-    touch /etc/snort/sid-msg.map
-  
-    chmod -R 5775 /etc/snort
-  
-    chmod -R 5775 /var/log/snort
-  
-    chmod -R 5775 /usr/local/lib/snort_dynamicrules
-  
-    chown -R snort:snort /etc/snort
-  
-    chown -R snort:snort /var/log/snort
-  
-    chown -R snort:snort /usr/local/lib/snort_dynamicrules
-  
-    cd ~/snort_src/snort-2.9.8.3/etc/
-  
-    cp *.conf* /etc/snort
-  
-    cp *.map /etc/snort
-  
-    cp *.dtd /etc/snort
-  
-    cd ~/snort_src/snort-2.9.8.3/src/dynamic-preprocessors/build/usr/local/lib/snort_dynamicpreprocessor/
-  
-    cp * /usr/local/lib/snort_dynamicpreprocessor/
-  
-    sed -i "s/include \$RULE\_PATH/#include \$RULE\_PATH/" /etc/snort/snort.conf
-  
-    sed -i "55 s/ipvar HOME_NET any/ipvar HOME_NET 192.168.1.0\/22/g" /etc/snort/snort.conf
-  sed -i "104 s/var RULE_PATH ..\/rules/var RULE_PATH \/etc\/snort\/rules/g" /etc/snort/snort.conf
-  sed -i "105 s/var SO_RULE_PATH ..\/so_rules/var SO_RULE_PATH \/etc\/snort\/so_rules/g" /etc/snort/snort.conf
-  sed -i "106 s/var PREPROC_RULE_PATH ..\/preproc_rules/var PREPROC_RULE_PATH \/etc\/snort\/preproc_rules/g" /etc/snort/snort.conf
-  sed -i "108 s/var WHITE_LIST_PATH ..\/rules/var WHITE_LIST_PATH \/etc\/snort\/rules\/iplists/g" /etc/snort/snort.conf
-  sed -i "109 s/var BLACK_LIST_PATH ..\/rules/var BLACK_LIST_PATH \/etc\/snort\/rules\/iplists/g" /etc/snort/snort.conf
-  sed -i "521 s/# output unified2: filename merged.log, limit 128, nostamp, mpls_event_types, vlan_event_types/output unified2: filename snort.u2, limit 128/g" /etc/snort/snort.conf
-  sed -i "545 s/#include \$RULE_PATH\/local.rules/include \$RULE_PATH\/local.rules/g" /etc/snort/snort.conf
-  
-  cd ~/snort_src/
-  
+
+    apt install snort
+    # Change SSH port in /etc/snort/snort.conf
+
   git clone git://github.com/firnsy/barnyard2.git
   
   cd barnyard2/
@@ -1442,190 +1366,9 @@ Security_app()
   
   chmod o-r /etc/snort/barnyard2.conf
   
-  apt-get -y install libcrypt-ssleay-perl liblwp-useragent-determined-perl
-  
-  cd ~/snort_src/
-  
-  wget https://github.com/finchy/pulledpork/archive/patch-3.zip
-  
-  unzip patch-3.zip
-  
-  cd pulledpork-patch-3
-  
-  cp pulledpork.pl /usr/local/bin/
-  
-  chmod +x /usr/local/bin/pulledpork.pl
-  
-  cp etc/*.conf /etc/snort/
-  
-  
-  dialog --backtitle "Installation du site web de Cairn Devices" --title "Enter your oinkcode"\
-  --inputbox "You need to create an account in https://www.snort.org in order to get an Oinkcode. This will allow the script to download the regular rules and documentation." 10 60 2> $FICHTMP
-  oinkcode=`cat $FICHTMP`
-  
-  sed -i "s/<oinkcode>/$oinkcode/g" /etc/snort/pulledpork.conf
-  sed -i "29 s/#rule_url=https:\/\/rules.emergingthreats.net\/|emerging.rules.tar.gz|open-nogpl/rule_url=https:\/\/rules.emergingthreats.net\/|emerging.rules.tar.gz|open-nogpl/g" /etc/snort/pulledpork.conf
-  sed -i "74 s/rule_path=\/usr\/local\/etc\/snort\/rules\/snort.rules/rule_path=\/etc\/snort\/rules\/snort.rules/g" /etc/snort/pulledpork.conf
-  sed -i "89 s/local_rules=_\/usr\/local\/etc\/snort\/rules\/local.rules/local_rules=\/etc\/snort\/rules\/local.rules/g" /etc/snort/pulledpork.conf
-  sed -i "92 s/sid_msg=\/usr\/local\/etc\/snort\/sid-msg.map/sid_msg=\/etc\/snort\/sid-msg.map/g" /etc/snort/pulledpork.conf
-  sed -i "96 s/sid_msg_version=1/sid_msg_version=2/g" /etc/snort/pulledpork.conf
-  sed -i "119 s/config_path=\/usr\/local\/etc\/snort\/snort.conf/config_path=\/etc\/snort\/snort.conf/g" /etc/snort/pulledpork.conf
-  sed -i "133 s/distro=FreeBSD-8.1/distro=Ubuntu-12-04/g" /etc/snort/pulledpork.conf
-  sed -i "141 s/black_list=\/usr\/local\/etc\/snort\/rules\/iplists\/default.blacklist/black_list=\/etc\/snort\/rules\/iplists\/black_list.rules/g" /etc/snort/pulledpork.conf
-  sed -i "150 s/IPRVersion=\/usr\/local\/etc\/snort\/rules\/iplists/IPRVersion=\/etc\/snort\/rules\/iplists/g" /etc/snort/pulledpork.conf
-  
-  sed -i "539 a\include \$RULE_PATH\/snort.rules" /etc/snort/snort.conf
-  
-  crontab -l > /tmp/crontab.tmp
-  echo "30 02 * * * /usr/local/bin/pulledpork.pl -c /etc/snort/pulledpork.conf -l" >> /tmp/crontab.tmp
-  crontab /tmp/crontab.tmp
-  rm /tmp/crontab.tmp
-  
-  echo "[Unit]" > /lib/systemd/system/snort.service
-  echo "Description=Snort NIDS Daemon" >> /lib/systemd/system/snort.service
-  echo "After=syslog.target network.target" >> /lib/systemd/system/snort.service
-  echo "[Service]" >> /lib/systemd/system/snort.service
-  echo "Type=simple" >> /lib/systemd/system/snort.service
-  echo "ExecStart=/usr/local/bin/snort -q -u snort -g snort -c /etc/snort/snort.conf -i $interface" >> /lib/systemd/system/snort.service
-  echo "[Install]" >> /lib/systemd/system/snort.service
-  echo "WantedBy=multi-user.target" >> /lib/systemd/system/snort.service
-  
-  systemctl daemon-reload
-  systemctl enable snort
-  systemctl start snort
-  
-  echo "[Unit]" > /lib/systemd/system/barnyard2.service
-  echo "Description=Barnyard2 Daemon" >> /lib/systemd/system/barnyard2.service
-  echo "After=syslog.target network.target" >> /lib/systemd/system/barnyard2.service
-  echo "[Service]" >> /lib/systemd/system/barnyard2.service
-  echo "Type=simple" >> /lib/systemd/system/barnyard2.service
-  echo "ExecStart=/usr/local/bin/barnyard2 -c /etc/snort/barnyard2.conf -d /var/log/snort -f snort.u2 -q -w /var/log/snort/barnyard2.waldo -g snort -u snort -D -a /var/log/snort/archived_logs" >> /lib/systemd/system/barnyard2.service
-  echo "[Install]" >> /lib/systemd/system/barnyard2.service
-  echo "WantedBy=multi-user.target" >> /lib/systemd/system/barnyard2.service
-  
-  systemctl daemon-reload
-  systemctl enable barnyard2
-  systemctl start barnyard2
-  
-  apt-get -y install libgdbm-dev libncurses5-dev git-core curl zlib1g-dev build-essential libssl-dev libreadline-dev libyaml-dev libsqlite3-dev sqlite3 libxml2-dev libxslt1-dev libcurl4-openssl-dev python-software-properties libffi-dev imagemagick libyaml-dev libxml2-dev libxslt-dev git libssl-dev
-  
-  echo "gem: --no-rdoc --no-ri" > ~/.gemrc
-  
-  sh -c "echo gem: --no-rdoc --no-ri > /etc/gemrc"
-  
-  cd ~/snort_src/
-  
-  wget http://cache.ruby-lang.org/pub/ruby/2.3/ruby-2.3.0.tar.gz
-  
-  tar -zxvf ruby-2.3.0.tar.gz
-  
-  cd ruby-2.3.0/
-  
-  ./configure
-  
-  make
-  
-  make install
-  
-  gem install wkhtmltopdf
-  
-  gem install bundler
-  
-  gem install rails
-  
-  gem install rake --version=11.1.2
-  
-  cd ~/snort_src/
-  
-  git clone git://github.com/Snorby/snorby.git
-  
-  cp -r snorby/ /var/www/
-  
-  cd /var/www/snorby/
-  
-  bundle install
-  
-  cp /var/www/snorby/config/database.yml.example /var/www/snorby/config/database.yml
-  
-  cp /var/www/snorby/config/snorby_config.yml.example /var/www/snorby/config/snorby_config.yml
-  
-  sed -i s/"\/usr\/local\/bin\/wkhtmltopdf"/"\/usr\/bin\/wkhtmltopdf"/g /var/www/snorby/config/snorby_config.yml
-  
-  bundle exec rake snorby:setup
-  
-  sed -i s/"do_mysql (~> 0.10.6)"/"do_mysql (0.10.17)"/g /var/www/snorby/Gemfile.lock
-  sed -i s/"do_mysql (0.10.6)"/"do_mysql (0.10.17)"/g /var/www/snorby/Gemfile.lock
-  
-  mysql -u root -p${internalPass} -e "CREATE DATABASE snorby;"
-  mysql -u root -p${internalPass} -e "CREATE USER 'snorby'@'localhost' IDENTIFIED BY '$internalPass';"
-  mysql -u root -p${internalPass} -e "GRANT USAGE ON *.* TO 'snorby'@'localhost';"
-  mysql -u root -p${internalPass} -e "GRANT ALL PRIVILEGES ON snorby.* TO 'snorby'@'localhost';"
-  
-  sed -i s/"password: \".*\""/"password: \"$internalPass\""/g /var/www/snorby/config/database.yml
-  
-  apt-get -y install libcurl4-openssl-dev libaprutil1-dev libapr1-dev apache2-dev
-  
-  gem install passenger
-  
-  passenger-install-apache2-module
-    
-  echo "LoadModule passenger_module /usr/local/rvm/gems/ruby-2.3.0/gems/passenger-5.0.26/buildout/apache2/mod_passenger.so" >> /etc/apache2/mods-available/passenger.load
-  
-  echo "PassengerRoot /usr/local/lib/ruby/gems/2.3.0/gems/passenger-5.0.26" >> /etc/apache2/mods-available/passenger.conf
-  echo "PassengerDefaultRuby /usr/local/bin/ruby" >> /etc/apache2/mods-available/passenger.conf
-  
-  a2enmod passenger
-  
-  systemctl restart apache2
-  
-  echo "<VirtualHost *:80>" > /etc/apache2/sites-available/001-snorby.conf
-  echo "ServerAdmin admin@$domainName" >> /etc/apache2/sites-available/001-snorby.conf
-  echo "ServerName snort-ids.$domainName" >> /etc/apache2/sites-available/001-snorby.conf
-  echo "DocumentRoot /var/www/snorby/public" >> /etc/apache2/sites-available/001-snorby.conf
-  echo '<Directory "/var/www/snorby/public">' >> /etc/apache2/sites-available/001-snorby.conf
-  echo "AllowOverride all" >> /etc/apache2/sites-available/001-snorby.conf
-  echo "Order deny,allow" >> /etc/apache2/sites-available/001-snorby.conf
-  echo "Allow from all" >> /etc/apache2/sites-available/001-snorby.conf
-  echo "Options -MultiViews" >> /etc/apache2/sites-available/001-snorby.conf
-  echo "</Directory>" >> /etc/apache2/sites-available/001-snorby.conf
-  echo "</VirtualHost>" >> /etc/apache2/sites-available/001-snorby.conf
-  
-  a2ensite 001-snorby.conf
-  
-  systemctl restart apache2
-  
-  sed -i "s/output database: log, mysql, user=snort password=********** dbname=snort host=localhost/#output database: log, mysql, user=snort password=********** dbname=snort host=localhost/g" /etc/snort/barnyard2.conf
-  echo "output database: log, mysql, user=snorby password=$internalPass dbname=snorby host=localhost sensor_name=sensor1" >> /etc/snort/barnyard2.conf
-  
-  systemctl restart barnyard2
-  
-  echo "[Unit]" > /lib/systemd/system/snorby_worker.service
-  echo "Description=Snorby Worker Daemon" >> /lib/systemd/system/snorby_worker.service
-  echo "Requires=apache2.service" >> /lib/systemd/system/snorby_worker.service
-  echo "After=syslog.target network.target apache2.service" >> /lib/systemd/system/snorby_worker.service
-  echo "[Service]" >> /lib/systemd/system/snorby_worker.service
-  echo "Type=forking" >> /lib/systemd/system/snorby_worker.service
-  echo "WorkingDirectory=/var/www/snorby" >> /lib/systemd/system/snorby_worker.service
-  echo "ExecStart=/usr/local/bin/ruby script/delayed_job start" >> /lib/systemd/system/snorby_worker.service
-  echo "[Install]" >> /lib/systemd/system/snorby_worker.service
-  echo "WantedBy=multi-user.target" >> /lib/systemd/system/snorby_worker.service
-  
-  systemctl daemon-reload
-  systemctl enable snorby_worker
-  systemctl start snorby_worker
-  
-  echo "auto $interface" >> /etc/network/interfaces
-  echo "iface $interface inet manual" >> /etc/network/interfaces
-  echo "               up ifconfig \$IFACE 0.0.0.0 up" >> /etc/network/interfaces
-  echo "               up ip link set \$IFACE promisc on" >> /etc/network/interfaces
-  echo "               down ip link set \$IFACE promisc off" >> /etc/network/interfaces
-  echo "               down infconfig \$IFACE down" >> /etc/network/interfaces
-  echo "" >> /etc/network/interfaces
-  echo "post-up ethtool -K $interface gro off" >> /etc/network/interfaces
-  echo "post-up ethtool -K $interface lro off" >> /etc/network/interfaces
-  
-  echo -e "Installation of Snort.......\033[32mDone\033[00m"
-  sleep 4
+
+    echo -e "Installation of Snort.......\033[32mDone\033[00m"
+    sleep 4
   }
 
   mail_SSH()
@@ -1890,6 +1633,7 @@ destemail = $email" >> /etc/fail2ban/jail.local
   Install_unattendedupgrades()
   {
     apt-get -y install unattended-upgrades
+    sed -i "s/\/\/Unattended-Upgrade::Mail \"root\";/Unattended-Upgrade::Mail \"$email\";/g" /etc/apt/apt.conf.d/50unattended-upgrades
   }
 
     DOSDDOSOtherattacks_protection()
@@ -1940,9 +1684,12 @@ destemail = $email" >> /etc/fail2ban/jail.local
     systemctl restart apache2
 
     # Phpmyadmin htpasswd protection
-    sed -i "s/<\/Directory>/<\/Directory>\n<Location \/phpmyadmin>\n AuthUserFile \/var\/www\/CairnDevices\/.htpasswd\n AuthGroupFile \/dev\/null\n AuthName \"Restricted access\"\n AuthType Basic\n require valid-user\n<\/Location>\n/g" /etc/apache2/sites-available/CairnDevices.conf
+    sed -i "s/<\/Directory>/<\/Directory>\n<Location \/phpmyadmin>\n AuthUserFile \/var\/www\/CairnDevices\/.htpassword\n AuthGroupFile \/dev\/null\n AuthName \"Restricted access\"\n AuthType Basic\n require valid-user\n<\/Location>\n/g" /etc/apache2/sites-available/CairnDevices.conf
 
-    htpasswd -bcB -C 8 /var/www/CairnDevices/.htpasswd $email $passnohash
+    htpasswd -bcB -C 8 /var/www/CairnDevices/.htpassword $email $passnohash
+
+    chmod 644 /var/www/CairnDevices/.htpassword
+    chown www-data:www-data /var/www/CairnDevices/.htpassword
  
     # Explain how to access to phpmyadmin
     dialog --backtitle "Installation du site web de Cairn devices" --title "Htpasswd protection" \
@@ -1958,6 +1705,9 @@ Password : Your password installation" 10 70
     sed -i "s/AllowOverride All/  AllowOverride All\n  AuthUserFile \/var\/www\/rainloop\/.htpasswd\n  AuthGroupFile \/dev\/null\n  AuthName \"Restricted access\"\n  AuthType Basic\n  require valid-user\n  Order allow,deny\n  Allow from all\n  Deny from env=AUTH_NEEDED\n  Satisfy any/g" /etc/apache2/sites-available/rainloop.conf
 
     htpasswd -bcB -C 8 /var/www/rainloop/.htpasswd $email $passnohash
+
+    chmod 644 /var/www/rainloop/.htpasswd
+    chown www-data:www-data /var/www/rainloop/.htpasswd
 
     # Explain how to access to rainloop administration panel
     dialog --backtitle "Installation du site web de Cairn devices" --title "Htpasswd protection" \
@@ -1975,7 +1725,13 @@ AuthName \"Restricted access\"
 AuthType Basic
 require valid-user" >> /var/www/postfixadmin/.htaccess
 
+    chmod 644 /var/www/postfixadmin/.htaccess
+    chown www-data:www-data /var/www/postfixadmin/.htaccess
+
     htpasswd -bcB -C 8 /var/www/postfixadmin/.htpasswd $email $passnohash
+
+    chmod 644 /var/www/postfixadmin/.htpasswd
+    chown www-data:www-data /var/www/postfixadmin/.htpasswd
 
     # Explain how to access to postfixadmin
     dialog --backtitle "Installation du site web de Cairn devices" --title "Htpasswd protection" \
@@ -2083,8 +1839,8 @@ Cleanning()
   echo "#!/bin/bash" >> /srv/firstReboot.sh
   echo "# Error log" >> /srv/firstReboot.sh
   echo "exec 2> >(tee -a firstRebootError.log)" >> /srv/firstReboot.sh
-  echo "apt-get -y update" >> /srv/firstReboot.sh
-  echo "apt-get -y upgrade" >> /srv/firstReboot.sh
+  echo "apt update" >> /srv/firstReboot.sh
+  echo "apt upgrade" >> /srv/firstReboot.sh
   echo "crontab -l > /tmp/crontab.tmp" >> /srv/firstReboot.sh
   echo "sed -i \"s/@reboot bash \/srv\/firstReboot.sh//g\" /tmp/crontab.tmp" >> /srv/firstReboot.sh
   echo "crontab /tmp/crontab.tmp" >> /srv/firstReboot.sh
