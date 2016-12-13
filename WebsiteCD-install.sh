@@ -1840,6 +1840,7 @@ Dev_utils()
   echo 'echo "Update Success !"' >> /usr/bin/updateCG
 
   chmod +x  /usr/bin/updateCG
+  chown -R $mainUser /home/$mainUser/Depots/
 
   # Expliquer comment utiliser le mode DEV
   
