@@ -1900,7 +1900,7 @@ trap "rm -f $FICHTMP" 0 1 2 3 5 15
   
 passnohash="0"
 repassnohash="1"
-while [ "$passnohash" != "$repassnohash" ] || [ "$adminPass" == "" ]
+while [ "$passnohash" != "$repassnohash" ] || [ "$passnohash" == "" ]
 do
 dialog --backtitle "Installation du site web de Cairn Devices" --title "Choose the installation password" \
 --insecure --passwordbox "" 7 60 2> $FICHTMP
