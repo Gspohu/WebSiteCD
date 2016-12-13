@@ -1863,7 +1863,7 @@ Cleanning()
 
   # Update post reboot
   crontab -l > /tmp/crontab.tmp
-  echo "@reboot root bash /srv/firstReboot.sh" >> /tmp/crontab.tmp
+  echo "@reboot root /srv/firstReboot.sh" >> /tmp/crontab.tmp
   crontab /tmp/crontab.tmp
   rm /tmp/crontab.tmp
 
@@ -1873,9 +1873,11 @@ Cleanning()
   echo "apt -y update" >> /srv/firstReboot.sh
   echo "apt -y upgrade" >> /srv/firstReboot.sh
   echo "crontab -l > /tmp/crontab.tmp" >> /srv/firstReboot.sh
-  echo "sed -i \"s/@reboot bash \/srv\/firstReboot.sh//g\" /tmp/crontab.tmp" >> /srv/firstReboot.sh
+  echo "sed -i \"s/@reboot root bash \/srv\/firstReboot.sh//g\" /tmp/crontab.tmp" >> /srv/firstReboot.sh
   echo "crontab /tmp/crontab.tmp" >> /srv/firstReboot.sh
   echo "rm /tmp/crontab.tmp" >> /srv/firstReboot.sh
+
+  chmod +x /srv/firstReboot.sh
 
   echo "We will now reboot your server"
   sleep 5
