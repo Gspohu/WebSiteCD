@@ -1882,15 +1882,15 @@ Update_sys
 Install_dependency
 
 DIALOG=${DIALOG=dialog}
-fichtemp=`tempfile 2>/dev/null` || fichtemp=/tmp/test$$
-trap "rm -f $fichtemp" 0 1 2 5 15
+touch /tmp/dialogtmp && FICHTMP=/tmp/dialogtmp
+trap "rm -f $FICHTMP" 0 1 2 3 5 15
 $DIALOG --clear --backtitle "Installation du site web de Cairn Devices" --title "Installation du site web de Cairn Devices" \
 --menu "Bonjour, choisissez votre type d'installation :" 15 80 5 \
 "Dédié" "Installation dédié" \
 "Serveur mail" "Installation du serveur mail" \
-"Mode dev" "Mode développeur" 2> $fichtemp
+"Mode dev" "Mode développeur" 2> $FICHTMP
 valret=$?
-choix=`cat $fichtemp`
+choix=`cat $FICHTMP`
 case $valret in
 0)	echo "'$choix' est votre choix";;
 1) 	echo "Appuyez sur Annuler.";;
@@ -1907,9 +1907,6 @@ do
 done
   
 # Password for installation (Mysql, etc)
-touch /tmp/dialogtmp && FICHTMP=/tmp/dialogtmp
-trap "rm -f $FICHTMP" 0 1 2 3 5 15
-  
 passnohash="0"
 repassnohash="1"
 while [ "$passnohash" != "$repassnohash" ] || [ "$passnohash" == "" ]
