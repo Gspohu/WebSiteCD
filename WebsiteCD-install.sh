@@ -1194,6 +1194,7 @@ Install_WebsiteCD()
   chmod -R 777 /var/www/CairnDevices
   rm master.zip 
   rm -r /var/www/CairnDevices/WebSiteCD-master/
+  rm /var/www/CairnDevices/WebsiteCD-install.sh
   echo -e "Installation de du site web de Cairn Devices.......\033[32mFait\033[00m"
   sleep 4
   
@@ -1836,7 +1837,7 @@ Dev_utils()
   cd ~
 
   echo "#!/bin/bash" >>  /usr/bin/updateCG
-  echo "rsync -a --exclude=\"Repository\" --exclude='logs' /home/$mainUser/Depots/WebSiteCD/ /var/www/CairnDevices/" >>  /usr/bin/updateCG
+  echo "rsync -a --exclude=\"Repository\" --exclude='logs' --exclude='WebsiteCD-install.sh' /home/$mainUser/Depots/WebSiteCD/ /var/www/CairnDevices/" >>  /usr/bin/updateCG
   echo 'echo "Update Success !"' >> /usr/bin/updateCG
 
   chmod +x  /usr/bin/updateCG
