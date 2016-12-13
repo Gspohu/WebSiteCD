@@ -52,9 +52,10 @@ Install_Mysql()
   mysql -u root -p${internalPass} -e "FLUSH PRIVILEGES"
   systemctl restart apache2
 
-  echo "skip-character-set-client-handshake" >> /etc/mysql/my.cnf
-  echo "collation-server=utf8_unicode_ci" >> /etc/mysql/my.cnf
-  echo "character-set-server=utf8" >> /etc/mysql/my.cnf
+  echo "# Set engine in utf8 by default" >> /etc/mysql/mysql.conf.d/mysqld.cnf
+  echo "skip-character-set-client-handshake" >> /etc/mysql/mysql.conf.d/mysqld.cnf
+  echo "collation-server=utf8_unicode_ci" >> /etc/mysql/mysql.conf.d/mysqld.cnf
+  echo "character-set-server=utf8" >> /etc/mysql/mysql.conf.d/mysqld.cnf
 
   systemctl restart mysql
 
