@@ -5,7 +5,6 @@ exec 2> >(tee -a error.log)
 
 # Variable declaration
 itscert="no"
-mainUser=$USER
 
 #####################
 ###   Function declaration  ###
@@ -1895,6 +1894,15 @@ case $valret in
 1) 	echo "Appuyez sur Annuler.";;
 255) 	echo "Appuyez sur Echap.";;
 esac
+
+mainUser=""
+# Ask for actual Linux user in used
+while [ "$mainUser" == "" ]      
+do
+  dialog --backtitle "Cairngit installation" --title "Actual Linux user"\
+  --inputbox "Please enter the name of the actual Linux user" 7 60 2> $FICHTMP
+  mainUser=`cat $FICHTMP`
+done
   
 # Password for installation (Mysql, etc)
 touch /tmp/dialogtmp && FICHTMP=/tmp/dialogtmp
