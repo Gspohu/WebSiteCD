@@ -51,6 +51,13 @@ Install_Mysql()
   mysql -u root -p${internalPass} -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%'"
   mysql -u root -p${internalPass} -e "FLUSH PRIVILEGES"
   systemctl restart apache2
+
+  echo "skip-character-set-client-handshake" >> /etc/mysql/my.cnf
+  echo "collation-server=utf8_unicode_ci" >> /etc/mysql/my.cnf
+  echo "character-set-server=utf8" >> /etc/mysql/my.cnf
+
+  systemctl restart mysql
+
   echo -e "Installation de MySQL.......\033[32mDone\033[00m"
   sleep 4
 }
@@ -1862,8 +1869,8 @@ Cleanning()
   echo "#!/bin/bash" >> /srv/firstReboot.sh
   echo "# Error log" >> /srv/firstReboot.sh
   echo "exec 2> >(tee -a firstRebootError.log)" >> /srv/firstReboot.sh
-  echo "apt update" >> /srv/firstReboot.sh
-  echo "apt upgrade" >> /srv/firstReboot.sh
+  echo "apt -y update" >> /srv/firstReboot.sh
+  echo "apt -y upgrade" >> /srv/firstReboot.sh
   echo "crontab -l > /tmp/crontab.tmp" >> /srv/firstReboot.sh
   echo "sed -i \"s/@reboot bash \/srv\/firstReboot.sh//g\" /tmp/crontab.tmp" >> /srv/firstReboot.sh
   echo "crontab /tmp/crontab.tmp" >> /srv/firstReboot.sh
