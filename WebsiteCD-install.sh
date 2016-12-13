@@ -1840,6 +1840,8 @@ Dev_utils()
   echo "rsync -a --exclude=\"Repository\" --exclude='logs' /home/$mainUser/Depots/WebSiteCD/ /var/www/CairnDevices/" >>  /usr/bin/updateCG
   echo 'echo "Update Success !"' >> /usr/bin/updateCG
 
+  chmod +x  /usr/bin/updateCG
+
   # Expliquer comment utiliser le mode DEV
   
   
