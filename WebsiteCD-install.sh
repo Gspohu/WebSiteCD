@@ -1863,7 +1863,7 @@ Cleanning()
 
   # Update post reboot
   crontab -l > /tmp/crontab.tmp
-  echo "@reboot bash /srv/firstReboot.sh" >> /tmp/crontab.tmp
+  echo "@reboot root bash /srv/firstReboot.sh" >> /tmp/crontab.tmp
   crontab /tmp/crontab.tmp
   rm /tmp/crontab.tmp
 
