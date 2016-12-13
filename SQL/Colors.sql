@@ -29,7 +29,7 @@ SET time_zone = "+00:00";
 CREATE TABLE `Colors` (
   `Item` text CHARACTER SET utf8,
   `Design_0` text CHARACTER SET utf8
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
 -- Contenu de la table `Colors`

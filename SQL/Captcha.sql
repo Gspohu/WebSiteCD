@@ -28,7 +28,7 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `Captcha` (
   `Nom` text CHARACTER SET utf8
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
 -- Contenu de la table `Captcha`
