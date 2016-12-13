@@ -5,6 +5,7 @@ exec 2> >(tee -a error.log)
 
 # Variable declaration
 itscert="no"
+mainUser=$USER
 
 #####################
 ###   Function declaration  ###
@@ -1310,16 +1311,17 @@ Security_app()
 
     # Configuration of rkhunter
     rkhunter --propupd
+    sed -i "s/#ALLOW_SSH_ROOT_USER=no/ALLOW_SSH_ROOT_USER=yes/g" /etc/rkhunter.conf
 
     # Crontab rules for anti rootkit
     crontab -l > /tmp/crontab.tmp
     echo "0 0 * * 0 root rkhunter --update" >> /tmp/crontab.tmp
-    echo "0 1 * * 0 root rkhunter --checkall --report-warnings-only | mail -s \"[$hostname on $domainName][RkHunter] Rapport de vérification\" $email" >> /tmp/crontab.tmp
+    echo "0 1 * * 0 root rkhunter --checkall --report-warnings-only | mail -s \"[RkHunter][$hostname on $domainName] Rapport de vérification\" $email" >> /tmp/crontab.tmp
 
-    echo "0 2 * * 0 root chkrootkit -q | mail -s \"[$hostname on $domainName][ChkRootkit] Rapport de vérification\" $email" >> /tmp/crontab.tmp
+    echo "0 2 * * 0 root chkrootkit -q | mail -s \"[ChkRootkit][$hostname on $domainName] Rapport de vérification\" $email" >> /tmp/crontab.tmp
 
     echo "0 3 1 * * root lynis --check-update" >> /tmp/crontab.tmp
-    echo "0 4 1 * * root lynis --check-all -Q | mail -s \"[$hostname on $domainName][Lynis] Rapport de vérification\" $email" >> /tmp/crontab.tmp
+    echo "0 4 1 * * root lynis --check-all --cronjob -Q | mail -s \"[Lynis][$hostname on $domainName] Rapport de vérification\" $email" >> /tmp/crontab.tmp
     crontab /tmp/crontab.tmp
     rm /tmp/crontab.tmp
   }
@@ -1627,7 +1629,7 @@ destemail = $email" >> /etc/fail2ban/jail.local
     done
     sed -i "5 s/Port 22/Port $sshport/g" /etc/ssh/sshd_config
     dialog --backtitle "Installation du site web de Cairn devices" --title "Changement port SSH" \
-  --ok-label "Next" --msgbox "Le port SSH à été changé pour éviter les attaques automatiques. Veuillez en prendre note. \nNouveau port : $sshport   \nPour accéder au serveur en ssh : ssh -p$sshport $USER@$domainName" 9 66
+  --ok-label "Next" --msgbox "Le port SSH à été changé pour éviter les attaques automatiques. Veuillez en prendre note. \nNouveau port : $sshport   \nPour accéder au serveur en ssh : ssh -p$sshport $mainUser@$domainName" 10 66
   }
 
   Install_unattendedupgrades()
@@ -1825,6 +1827,24 @@ ItsCert()
   fi
 }
 
+Dev_utils()
+{
+  mkdir Depots
+  cd Depots
+
+  git clone https://github.com/Gspohu/WebSiteCD.git
+
+  cd ~
+
+  echo "#!/bin/bash" >>  /usr/bin/updateCG
+  echo "rsync -a --exclude=\"Repository\" --exclude='logs' /home/$mainUser/Depots/WebSiteCD/ /var/www/CairnDevices/" >>  /usr/bin/updateCG
+  echo 'echo "Update Success !"' >> /usr/bin/updateCG
+
+  # Expliquer comment utiliser le mode DEV
+  
+  
+}
+
 Cleanning()
 {
   apt-get -y autoremove
@@ -1864,13 +1884,14 @@ trap "rm -f $fichtemp" 0 1 2 5 15
 $DIALOG --clear --backtitle "Installation du site web de Cairn Devices" --title "Installation du site web de Cairn Devices" \
 --menu "Bonjour, choisissez votre type d'installation :" 15 80 5 \
 "Dédié" "Installation dédié" \
-"Serveur mail" "Installation du serveur mail" 2> $fichtemp
+"Serveur mail" "Installation du serveur mail" \
+"Mode dev" "Mode développeur" 2> $fichtemp
 valret=$?
 choix=`cat $fichtemp`
 case $valret in
 0)	echo "'$choix' est votre choix";;
-1) 	echo "Appuyé sur Annuler.";;
-255) 	echo "Appuyé sur Echap.";;
+1) 	echo "Appuyez sur Annuler.";;
+255) 	echo "Appuyez sur Echap.";;
 esac
   
 # Password for installation (Mysql, etc)
@@ -1879,7 +1900,7 @@ trap "rm -f $FICHTMP" 0 1 2 3 5 15
   
 passnohash="0"
 repassnohash="1"
-while [ "$passnohash" != "$repassnohash" ]      
+while [ "$passnohash" != "$repassnohash" ] || [ "$adminPass" == "" ]
 do
 dialog --backtitle "Installation du site web de Cairn Devices" --title "Choose the installation password" \
 --insecure --passwordbox "" 7 60 2> $FICHTMP
@@ -1898,7 +1919,7 @@ repassnohash="0"
 
 repass="0"
 adminPass="1"
-while [ "$adminPass" != "$repass" ]      
+while [ "$adminPass" != "$repass" ] || [ "$adminPass" == "" ]
 do
 dialog --backtitle "Installation du site web de Cairn Devices" --title "Choose the admin password" \
 --insecure --passwordbox "" 7 60 2> $FICHTMP
@@ -1942,5 +1963,19 @@ then
   Install_Rainloop
   Install_Postgrey
   ItsCert
+  Cleanning
+elif [ "$choix" = "Mode dev" ]
+then
+  Install_Apache2
+  Install_Mysql
+  Install_PHP
+  Install_phpmyadmin
+  Install_mail_server
+  Install_Rainloop
+  Install_Postgrey
+  Install_WebsiteCD
+  Security_app
+  ItsCert
+  Dev_utils
   Cleanning
 fi
