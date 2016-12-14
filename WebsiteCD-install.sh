@@ -1208,6 +1208,7 @@ Install_WebsiteCD()
   rm master.zip 
   rm -r /var/www/CairnDevices/WebSiteCD-master/
   rm /var/www/CairnDevices/WebsiteCD-install.sh
+  rm -r /var/www/CairnDevices/SQL/
   echo -e "Installation de du site web de Cairn Devices.......\033[32mFait\033[00m"
   sleep 4
   
@@ -1847,7 +1848,7 @@ Password : Your password installation" 10 70
 
   dialog --backtitle "Installation of security apps" --title "Choose security apps" \
   --ok-label "Ok" --cancel-label "Quit" \
-  --checklist "" 20 77 10 \
+  --checklist "" 17 77 11 \
   "Rootkits" "Check rootkits with rkhunter, chrootkit, lynis" off \
   "SNORT" "Installattion of SNORT with web interface" off \
   "SSH" "Change SSH port, send email when SSH connexion" off \
@@ -1934,7 +1935,7 @@ Dev_utils()
   cd ~
 
   echo "#!/bin/bash" >>  /usr/bin/updateCG
-  echo "rsync -a --exclude=\"Repository\" --exclude='logs' --exclude='WebsiteCD-install.sh' /home/$mainUser/Depots/WebSiteCD/ /var/www/CairnDevices/" >>  /usr/bin/updateCG
+  echo "rsync -a --exclude=\"Repository\" --exclude='logs' --exclude='WebsiteCD-install.sh' --exclude='SQL' /home/$mainUser/Depots/WebSiteCD/ /var/www/CairnDevices/" >>  /usr/bin/updateCG
   echo 'echo "Update Success !"' >> /usr/bin/updateCG
 
   chmod +x  /usr/bin/updateCG
