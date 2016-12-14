@@ -5,6 +5,7 @@ exec 2> >(tee -a error.log)
 
 # Variable declaration
 itscert="no"
+sshport="22"
 
 #####################
 ###   Function declaration  ###
@@ -1687,15 +1688,18 @@ destemail = $email" >> /etc/fail2ban/jail.local
 
   ESMWEB_monitoring()
   {
+    # Install dependency
+    apt-get -y install php-xml
+
     wget http://www.ezservermonitor.com/esm-web/downloads/version/2.5
     mkdir -p /var/www/esmweb/logs/
-    unzip ezservermonitor-web_v2.5.zip -d /var/www/esmweb
-    rsync -a /var/www/esmweb/eZServerMonitor-2.5/ /var/www/esmweb/ 
-    rm ezservermonitor-web_v2.5.zip 
+    unzip 2.5 -d /var/www/esmweb
+    rsync -a /var/www/esmweb/eZServerMonitor-2.5/ /var/www/esmweb/
+    rm 2.5 
     rm -R /var/www/esmweb/eZServerMonitor-2.5/
     chown -R www-data:www-data /var/www/esmweb
 
-    # Apache2 configuration for esmweb		
+    # Apache2 configuration for esmweb
     echo "<VirtualHost *:80>" > /etc/apache2/sites-available/esmweb.conf
     echo "ServerAdmin postmaster@$domainName" >> /etc/apache2/sites-available/esmweb.conf
     echo "ServerName esmweb.$domainName" >> /etc/apache2/sites-available/esmweb.conf
@@ -1722,7 +1726,7 @@ destemail = $email" >> /etc/fail2ban/jail.local
     dialog --backtitle "Installation du site web de Cairn devices" --title "DNS" \
     --ok-label "Next" --msgbox "
 In order to access to esmweb monitoring page you have to update your DNS configuration :		
-esmweb.$domainName.	0	A	ipv4 of your server" 6 70
+esmweb.$domainName.	0	A	ipv4 of your server" 8 70
 
     # Esmweb htpasswd protection
     echo "AuthUserFile /var/www/esmweb/.htpasswd
@@ -1746,7 +1750,14 @@ In order to access to esmweb monitoring page you have to go to this url :
 https://esmweb.$domainName/
 
 ID : $email
-Password : Your password installation" 10 70
+Password : Your password installation" 11 70
+
+     # Configure Esmweb
+     sed -i "s/\"auto_refresh\": 0/\"auto_refresh\": 60/g" /var/www/esmweb/conf/esm.config.json
+     sed -i "s/\"theme\": \"blue\"/\"theme\": \"purple\"/g" /var/www/esmweb/conf/esm.config.json
+     sed -i "s/\"facebook.com\"/\"ovh.com\"/g" /var/www/esmweb/conf/esm.config.json
+     sed -i "s/\"port\": 22/\"port\": $sshport/g" /var/www/esmweb/conf/esm.config.json
+     sed -i "s/\"list\": \[/\"list\": \[\n            {\n                \"name\": \"Web Server HTTPS\",\n                \"host\": \"localhost\",\n                \"port\": 443,\n                \"protocol\": \"tcp\"\n            },\n/g" /var/www/esmweb/conf/esm.config.json
   }
 
 
@@ -1825,7 +1836,7 @@ Password : Your password installation" 10 70
 
   dialog --backtitle "Installation of security apps" --title "Choose security apps" \
   --ok-label "Ok" --cancel-label "Quit" \
-  --checklist "" 18 77 10 \
+  --checklist "" 19 77 10 \
   "Rootkits" "Check rootkits with rkhunter, chrootkit, lynis" off \
   "SNORT" "Installattion of SNORT with web interface" off \
   "SSH" "Change SSH port, send email when SSH connexion" off \
