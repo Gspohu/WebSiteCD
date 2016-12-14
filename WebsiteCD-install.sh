@@ -150,7 +150,7 @@ $domainName.	600	SPF	\"v=spf1 a mx ptr ip4:ipv4 of your server include:_spf.goog
   echo "# Pass the default character set" >> /etc/apache2/sites-available/postfixadmin.conf
   echo "AddDefaultCharset utf-8" >> /etc/apache2/sites-available/postfixadmin.conf
   echo "php_admin_value open_basedir /var/www/postfixadmin/" >> /etc/apache2/sites-available/postfixadmin.conf
-  echo "<FilesMatch "^\.">" >> /etc/apache2/sites-available/postfixadmin.conf
+  echo "<FilesMatch "^\\.">" >> /etc/apache2/sites-available/postfixadmin.conf
   echo "    Order allow,deny" >> /etc/apache2/sites-available/postfixadmin.conf
   echo "    Deny from all" >> /etc/apache2/sites-available/postfixadmin.conf
   echo "</FilesMatch>" >> /etc/apache2/sites-available/postfixadmin.conf
@@ -1122,7 +1122,7 @@ Install_Rainloop()
   echo "# Pass the default character set" >> /etc/apache2/sites-available/rainloop.conf
   echo "AddDefaultCharset utf-8" >> /etc/apache2/sites-available/rainloop.conf
   echo "php_admin_value open_basedir /var/www/rainloop/" >> /etc/apache2/sites-available/rainloop.conf
-  echo "<FilesMatch "^\.">" >> /etc/apache2/sites-available/rainloop.conf
+  echo "<FilesMatch "^\\.">" >> /etc/apache2/sites-available/rainloop.conf
   echo "    Order allow,deny" >> /etc/apache2/sites-available/rainloop.conf
   echo "    Deny from all" >> /etc/apache2/sites-available/rainloop.conf
   echo "</FilesMatch>" >> /etc/apache2/sites-available/rainloop.conf
@@ -1216,7 +1216,7 @@ Install_WebsiteCD()
   echo "# Pass the default character set" >> /etc/apache2/sites-available/CairnDevices.conf
   echo "AddDefaultCharset utf-8" >> /etc/apache2/sites-available/CairnDevices.conf
   echo "php_admin_value open_basedir /var/www/CairnDevices/:/usr/share/phpmyadmin/:/etc/phpmyadmin/:/var/lib/phpmyadmin/:/usr/share/php/php-gettext/:/usr/share/javascript/:/usr/share/php/tcpdf/:/usr/share/doc/phpmyadmin/:/usr/share/php/phpseclib/" >> /etc/apache2/sites-available/CairnDevices.conf
-  echo "<FilesMatch "^\.">" >> /etc/apache2/sites-available/CairnDevices.conf
+  echo "<FilesMatch "^\\.">" >> /etc/apache2/sites-available/CairnDevices.conf
   echo "    Order allow,deny" >> /etc/apache2/sites-available/CairnDevices.conf
   echo "    Deny from all" >> /etc/apache2/sites-available/CairnDevices.conf
   echo "</FilesMatch>" >> /etc/apache2/sites-available/CairnDevices.conf
@@ -1277,7 +1277,7 @@ Security_app()
     while [ "$email" == "" ]      
     do
       dialog --backtitle "Cairngit installation" --title "Email for security reports"\
-      --inputbox "/!\\ Should be external of this server /!\\" 7 60 2> $FICHTMP
+      --inputbox "         /!\\ Should be external of this server /!\\" 7 60 2> $FICHTMP
       email=`cat $FICHTMP`
     done
     hostname=$(hostname)
@@ -1708,7 +1708,7 @@ destemail = $email" >> /etc/fail2ban/jail.local
     echo "# Pass the default character set" >> /etc/apache2/sites-available/esmweb.conf
     echo "AddDefaultCharset utf-8" >> /etc/apache2/sites-available/esmweb.conf
     echo "php_admin_value open_basedir /var/www/esmweb/" >> /etc/apache2/sites-available/esmweb.conf
-    echo "<FilesMatch "^\.">" >> /etc/apache2/sites-available/esmweb.conf
+    echo "<FilesMatch "^\\.">" >> /etc/apache2/sites-available/esmweb.conf
     echo "    Order allow,deny" >> /etc/apache2/sites-available/esmweb.conf
     echo "    Deny from all" >> /etc/apache2/sites-available/esmweb.conf
     echo "</FilesMatch>" >> /etc/apache2/sites-available/esmweb.conf
@@ -1758,6 +1758,9 @@ Password : Your password installation" 11 70
      sed -i "s/\"facebook.com\"/\"ovh.com\"/g" /var/www/esmweb/conf/esm.config.json
      sed -i "s/\"port\": 22/\"port\": $sshport/g" /var/www/esmweb/conf/esm.config.json
      sed -i "s/\"list\": \[/\"list\": \[\n            {\n                \"name\": \"Web Server HTTPS\",\n                \"host\": \"localhost\",\n                \"port\": 443,\n                \"protocol\": \"tcp\"\n            },\n/g" /var/www/esmweb/conf/esm.config.json
+
+     # Creer en PHP un système d'autentification
+
   }
 
 
@@ -1836,7 +1839,7 @@ Password : Your password installation" 10 70
 
   dialog --backtitle "Installation of security apps" --title "Choose security apps" \
   --ok-label "Ok" --cancel-label "Quit" \
-  --checklist "" 19 77 10 \
+  --checklist "" 20 77 10 \
   "Rootkits" "Check rootkits with rkhunter, chrootkit, lynis" off \
   "SNORT" "Installattion of SNORT with web interface" off \
   "SSH" "Change SSH port, send email when SSH connexion" off \
