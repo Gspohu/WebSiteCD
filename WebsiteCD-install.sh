@@ -149,7 +149,9 @@ $domainName.	600	SPF	\"v=spf1 a mx ptr ip4:ipv4 of your server include:_spf.goog
   echo "DocumentRoot /var/www/postfixadmin/" >> /etc/apache2/sites-available/postfixadmin.conf
   echo "# Pass the default character set" >> /etc/apache2/sites-available/postfixadmin.conf
   echo "AddDefaultCharset utf-8" >> /etc/apache2/sites-available/postfixadmin.conf
+  echo "# Containment of postfixadmin" >> /etc/apache2/sites-available/postfixadmin.conf
   echo "php_admin_value open_basedir /var/www/postfixadmin/" >> /etc/apache2/sites-available/postfixadmin.conf
+  echo "# Prohibit access to files starting with a dot" >> /etc/apache2/sites-available/postfixadmin.conf
   echo "<FilesMatch "^\\.">" >> /etc/apache2/sites-available/postfixadmin.conf
   echo "    Order allow,deny" >> /etc/apache2/sites-available/postfixadmin.conf
   echo "    Deny from all" >> /etc/apache2/sites-available/postfixadmin.conf
@@ -1121,7 +1123,9 @@ Install_Rainloop()
   echo "DocumentRoot /var/www/rainloop/" >> /etc/apache2/sites-available/rainloop.conf
   echo "# Pass the default character set" >> /etc/apache2/sites-available/rainloop.conf
   echo "AddDefaultCharset utf-8" >> /etc/apache2/sites-available/rainloop.conf
+  echo "# Containment of rainloop" >> /etc/apache2/sites-available/rainloop.conf
   echo "php_admin_value open_basedir /var/www/rainloop/" >> /etc/apache2/sites-available/rainloop.conf
+  echo "# Prohibit access to files starting with a dot" >> /etc/apache2/sites-available/rainloop.conf
   echo "<FilesMatch "^\\.">" >> /etc/apache2/sites-available/rainloop.conf
   echo "    Order allow,deny" >> /etc/apache2/sites-available/rainloop.conf
   echo "    Deny from all" >> /etc/apache2/sites-available/rainloop.conf
@@ -1215,7 +1219,9 @@ Install_WebsiteCD()
   echo "DocumentRoot /var/www/CairnDevices/" >> /etc/apache2/sites-available/CairnDevices.conf
   echo "# Pass the default character set" >> /etc/apache2/sites-available/CairnDevices.conf
   echo "AddDefaultCharset utf-8" >> /etc/apache2/sites-available/CairnDevices.conf
+  echo "# Containment of CairnDevices website (+phpmyadmin)" >> /etc/apache2/sites-available/CairnDevices.conf
   echo "php_admin_value open_basedir /var/www/CairnDevices/:/usr/share/phpmyadmin/:/etc/phpmyadmin/:/var/lib/phpmyadmin/:/usr/share/php/php-gettext/:/usr/share/javascript/:/usr/share/php/tcpdf/:/usr/share/doc/phpmyadmin/:/usr/share/php/phpseclib/" >> /etc/apache2/sites-available/CairnDevices.conf
+  echo "# Prohibit access to files starting with a dot" >> /etc/apache2/sites-available/CairnDevices.conf
   echo "<FilesMatch "^\\.">" >> /etc/apache2/sites-available/CairnDevices.conf
   echo "    Order allow,deny" >> /etc/apache2/sites-available/CairnDevices.conf
   echo "    Deny from all" >> /etc/apache2/sites-available/CairnDevices.conf
@@ -1707,7 +1713,9 @@ destemail = $email" >> /etc/fail2ban/jail.local
     echo "DocumentRoot /var/www/esmweb/" >> /etc/apache2/sites-available/esmweb.conf
     echo "# Pass the default character set" >> /etc/apache2/sites-available/esmweb.conf
     echo "AddDefaultCharset utf-8" >> /etc/apache2/sites-available/esmweb.conf
+    echo "# Containment of esmweb" >> /etc/apache2/sites-available/esmweb.conf
     echo "php_admin_value open_basedir /var/www/esmweb/" >> /etc/apache2/sites-available/esmweb.conf
+    echo "# Prohibit access to files starting with a dot" >> /etc/apache2/sites-available/esmweb.conf
     echo "<FilesMatch "^\\.">" >> /etc/apache2/sites-available/esmweb.conf
     echo "    Order allow,deny" >> /etc/apache2/sites-available/esmweb.conf
     echo "    Deny from all" >> /etc/apache2/sites-available/esmweb.conf
