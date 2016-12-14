@@ -1261,7 +1261,6 @@ Install_WebsiteCD()
   sleep 4
 }
   
-
 Security_app()
 {
   # Enabled UFW
@@ -1686,6 +1685,71 @@ destemail = $email" >> /etc/fail2ban/jail.local
     apt-get -y install apparmor apparmor-profiles apparmor-utils
   }
 
+  ESMWEB_monitoring()
+  {
+    wget http://www.ezservermonitor.com/esm-web/downloads/version/2.5
+    mkdir -p /var/www/esmweb/logs/
+    unzip ezservermonitor-web_v2.5.zip -d /var/www/esmweb
+    rsync -a /var/www/esmweb/eZServerMonitor-2.5/ /var/www/esmweb/ 
+    rm ezservermonitor-web_v2.5.zip 
+    rm -R /var/www/esmweb/eZServerMonitor-2.5/
+    chown -R www-data:www-data /var/www/esmweb
+
+    # Apache2 configuration for esmweb		
+    echo "<VirtualHost *:80>" > /etc/apache2/sites-available/esmweb.conf
+    echo "ServerAdmin postmaster@$domainName" >> /etc/apache2/sites-available/esmweb.conf
+    echo "ServerName esmweb.$domainName" >> /etc/apache2/sites-available/esmweb.conf
+    echo "ServerAlias esmweb.$domainName" >> /etc/apache2/sites-available/esmweb.conf
+    echo "DocumentRoot /var/www/esmweb/" >> /etc/apache2/sites-available/esmweb.conf
+    echo "# Pass the default character set" >> /etc/apache2/sites-available/esmweb.conf
+    echo "AddDefaultCharset utf-8" >> /etc/apache2/sites-available/esmweb.conf
+    echo "php_admin_value open_basedir /var/www/esmweb/" >> /etc/apache2/sites-available/esmweb.conf
+    echo "<FilesMatch "^\.">" >> /etc/apache2/sites-available/esmweb.conf
+    echo "    Order allow,deny" >> /etc/apache2/sites-available/esmweb.conf
+    echo "    Deny from all" >> /etc/apache2/sites-available/esmweb.conf
+    echo "</FilesMatch>" >> /etc/apache2/sites-available/esmweb.conf
+    echo "<Directory /var/www/esmweb/ >" >> /etc/apache2/sites-available/esmweb.conf
+    echo "AllowOverride All" >> /etc/apache2/sites-available/esmweb.conf
+    echo "</Directory>" >> /etc/apache2/sites-available/esmweb.conf
+    echo "ErrorLog /var/www/esmweb/logs/error.log" >> /etc/apache2/sites-available/esmweb.conf
+    echo "CustomLog /var/www/esmweb/logs/access.log combined" >> /etc/apache2/sites-available/esmweb.conf
+    echo "</VirtualHost>" >> /etc/apache2/sites-available/esmweb.conf
+  
+    a2ensite esmweb.conf
+    systemctl restart apache2
+
+    # DNS for esmweb
+    dialog --backtitle "Installation du site web de Cairn devices" --title "DNS" \
+    --ok-label "Next" --msgbox "
+In order to access to esmweb monitoring page you have to update your DNS configuration :		
+esmweb.$domainName.	0	A	ipv4 of your server" 6 70
+
+    # Esmweb htpasswd protection
+    echo "AuthUserFile /var/www/esmweb/.htpasswd
+AuthGroupFile /dev/null
+AuthName \"Restricted access\"
+AuthType Basic
+require valid-user" >> /var/www/esmweb/.htaccess
+
+    chmod 644 /var/www/esmweb/.htaccess
+    chown www-data:www-data /var/www/esmweb/.htaccess
+
+    htpasswd -bcB -C 8 /var/www/esmweb/.htpasswd $email $passnohash
+
+    chmod 644 /var/www/esmweb/.htpasswd
+    chown www-data:www-data /var/www/esmweb/.htpasswd
+
+    # Explain how to access to esmweb
+    dialog --backtitle "Installation du site web de Cairn devices" --title "Htpasswd protection" \
+    --ok-label "Next" --msgbox "
+In order to access to esmweb monitoring page you have to go to this url :		
+https://esmweb.$domainName/
+
+ID : $email
+Password : Your password installation" 10 70
+  }
+
+
   htpasswd_protection()
   {
     # Apache2 mod
@@ -1752,6 +1816,7 @@ https://postfixadmin.$domainName/
 ID : $email
 Password : Your password installation" 10 70
 
+
     systemctl restart apache2
 
   }
@@ -1769,6 +1834,7 @@ Password : Your password installation" 10 70
   "Fail2ban" "Install fail2ban rules W00t, Dos/DDos, SSH/SASL" off \
   "Unattended Upgrades" "Install Unattended Upgrade" off \
   "Sys protection" "DOS/DDOS protection, martian log, ICMP" off\
+  "Esmweb" "Web page to monitoring your server" off\
   "Htpasswd" "Activate htpasswd protection on admin pages" off\
   "SSL" "SSL certification, with let's encrypt" off 2> $FICHTMP
 
@@ -1785,6 +1851,7 @@ Password : Your password installation" 10 70
   "Fail2ban") Install_Fail2ban ;;
   "Unattended Upgrades") Install_unattendedupgrades ;;
   "Sys protection") DOSDDOSOtherattacks_protection ;;
+  "Esmweb") ESMWEB_monitoring ;;
   "Htpasswd") htpasswd_protection ;;
   "SSL") Lets_cert ;;
   esac
@@ -1860,24 +1927,6 @@ Cleanning()
 {
   apt-get -y autoremove
   echo -e "Cleaning .............\033[32mDone\033[00m"
-
-  # Update post reboot
-  crontab -l > /tmp/crontab.tmp
-  echo "@reboot root /srv/firstReboot.sh" >> /tmp/crontab.tmp
-  crontab /tmp/crontab.tmp
-  rm /tmp/crontab.tmp
-
-  echo "#!/bin/bash" >> /srv/firstReboot.sh
-  echo "# Error log" >> /srv/firstReboot.sh
-  echo "exec 2> >(tee -a firstRebootError.log)" >> /srv/firstReboot.sh
-  echo "apt -y update" >> /srv/firstReboot.sh
-  echo "apt -y upgrade" >> /srv/firstReboot.sh
-  echo "crontab -l > /tmp/crontab.tmp" >> /srv/firstReboot.sh
-  echo "sed -i \"s/@reboot root bash \/srv\/firstReboot.sh//g\" /tmp/crontab.tmp" >> /srv/firstReboot.sh
-  echo "crontab /tmp/crontab.tmp" >> /srv/firstReboot.sh
-  echo "rm /tmp/crontab.tmp" >> /srv/firstReboot.sh
-
-  chmod +x /srv/firstReboot.sh
 
   echo "We will now reboot your server"
   sleep 5
