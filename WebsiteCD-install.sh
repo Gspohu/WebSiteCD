@@ -1737,30 +1737,6 @@ destemail = $email" >> /etc/fail2ban/jail.local
 In order to access to esmweb monitoring page you have to update your DNS configuration :		
 esmweb.$domainName.	0	A	ipv4 of your server" 8 70
 
-    # Esmweb htpasswd protection
-    echo "AuthUserFile /var/www/esmweb/.htpasswd
-AuthGroupFile /dev/null
-AuthName \"Restricted access\"
-AuthType Basic
-require valid-user" >> /var/www/esmweb/.htaccess
-
-    chmod 644 /var/www/esmweb/.htaccess
-    chown www-data:www-data /var/www/esmweb/.htaccess
-
-    htpasswd -bcB -C 8 /var/www/esmweb/.htpasswd $email $passnohash
-
-    chmod 644 /var/www/esmweb/.htpasswd
-    chown www-data:www-data /var/www/esmweb/.htpasswd
-
-    # Explain how to access to esmweb
-    dialog --backtitle "Installation du site web de Cairn devices" --title "Htpasswd protection" \
-    --ok-label "Next" --msgbox "
-In order to access to esmweb monitoring page you have to go to this url :		
-https://esmweb.$domainName/
-
-ID : $email
-Password : Your password installation" 11 70
-
      # Configure Esmweb
      sed -i "s/\"auto_refresh\": 0/\"auto_refresh\": 60/g" /var/www/esmweb/conf/esm.config.json
      sed -i "s/\"theme\": \"blue\"/\"theme\": \"purple\"/g" /var/www/esmweb/conf/esm.config.json
@@ -1768,7 +1744,146 @@ Password : Your password installation" 11 70
      sed -i "s/\"port\": 22/\"port\": $sshport/g" /var/www/esmweb/conf/esm.config.json
      sed -i "s/\"list\": \[/\"list\": \[\n            {\n                \"name\": \"Web Server HTTPS\",\n                \"host\": \"localhost\",\n                \"port\": 443,\n                \"protocol\": \"tcp\"\n            },\n/g" /var/www/esmweb/conf/esm.config.json
 
-     # Creer en PHP un système d'autentification
+     # Auth php
+     sed -i "s/^<?php/<?php 
+session_start();
+#Access
+\$redirect = \"connexion.php\";
+
+if(isset(\$_SESSION['esmAdmin']))
+{
+        if(\$_SESSION['esmAdmin'] != 'true')
+        {
+                header(\"Location: \$redirect\");
+        }
+}
+else
+{
+        header(\"Location: \$redirect\");
+}
+
+/g" /var/www/esmweb/index.php
+
+echo "<?php
+session_start();
+
+# Test access autorization
+if (isset(\$_POST['conn_pseudo']) && isset(\$_POST['conn_password']))
+{
+        \$esmIdconn = htmlspecialchars(\$_POST['conn_pseudo']);
+        \$esmPassconn = hash('sha256', \$_POST['conn_password']);
+
+        # Get id and password
+        \$secureAccess = fopen('/var/www/esmweb/.htpassword', 'r+');
+
+        \$esmId = fgets(\$secureAccess);
+        \$esmPass = fgets(\$secureAccess);
+
+        fclose(\$secureAccess);
+
+        # Clean values
+        \$esmId = preg_replace(\"/(\r\n|\n|\r)/\", \"\", \$esmId);
+        \$esmPass = preg_replace(\"/(\r\n|\n|\r)/\", \"\", \$esmPass);
+
+
+        if (\$esmIdconn == \$esmId && \$esmPassconn == \$esmPass)
+        {
+                session_start();
+                \$_SESSION['esmAdmin']   = \"true\";
+                \$redirect           = \"index.php\";
+                header(\"Location: \$redirect\");
+        }
+        else
+        {
+                session_start();
+                \$_SESSION['esmAdmin']   = \"false\";
+        }
+}
+
+?>
+
+<!DOCTYPE html>
+<html>
+        <head>
+                <meta charset=\"utf-8\" />
+                <title>esm\`Web Connexion</title>
+                <link href=\"/web/css/connexion.css\" rel=\"stylesheet\" /> 
+        </head>
+
+        <div class=\"connexion\">
+                <p class=\"title_connexion\">Connexion</p>
+
+                <form method=\"post\" >
+                        <p><input class=\"connexion_field\" type=\"text\" name=\"conn_pseudo\" id=\"Pseudo\" value=\"Admin\" /></p>
+                        <p><input class=\"connexion_field\" type=\"password\" name=\"conn_password\" id=\"Mot de passe\" /></p>
+                        <input class=\"submit_connexion\" type=\"submit\" value=\"Submit\" />
+                </form>
+        </div>
+<html>
+" >> /var/www/esmweb/connexion.php
+
+    echo "html
+{
+	height: 100%;
+	margin:0;
+	padding:0;
+	background-color: #aa8ecc;
+	background-size: cover;
+	font-family: 'Ubuntu';
+        display: flex;
+        justify-content: center;
+        align-items: center;
+}
+
+body
+{
+        margin: 0;
+}
+
+.title_connexion
+{
+	color: white;
+	font-size: LARGE;
+	margin: 0;
+	margin-bottom: 30px;
+}
+
+.connexion
+{
+	padding: 10px;
+	background-color: #9775c1;		
+	border-radius: 5px;
+	border: 1px #3a2d4b;
+}
+
+.connexion_field
+{
+	width: 300px;
+	height: 30px;
+	border: none;
+	border-radius: 3px;
+	padding: 3px;
+	font-size: 15px;
+	text-align: center;
+}
+
+.submit_connexion
+{
+	background-color: #6c548b;
+	font-size: LARGE;
+        width: 306px;
+        height: 36px;
+        border: none;
+        border-radius: 3px;
+	color: white;
+	margin-top: 5px;
+}
+" >> /var/www/esmweb/web/css/connexion.css
+
+    $esmpasshash=$(echo -n $adminPass | sha256sum | sed 's/  -//g')
+
+    echo "Admin" >>  /var/www/esmweb/.htpassword
+	echo "$esmpasshash" >>  /var/www/esmweb/.htpassword
 
   }
 
@@ -1839,6 +1954,29 @@ https://postfixadmin.$domainName/
 ID : $email
 Password : Your password installation" 10 70
 
+    # Esmweb htpasswd protection
+    echo "AuthUserFile /var/www/esmweb/.htpasswd
+AuthGroupFile /dev/null
+AuthName \"Restricted access\"
+AuthType Basic
+require valid-user" >> /var/www/esmweb/.htaccess
+
+    chmod 644 /var/www/esmweb/.htaccess
+    chown www-data:www-data /var/www/esmweb/.htaccess
+
+    htpasswd -bcB -C 8 /var/www/esmweb/.htpasswd $email $passnohash
+
+    chmod 644 /var/www/esmweb/.htpasswd
+    chown www-data:www-data /var/www/esmweb/.htpasswd
+
+    # Explain how to access to esmweb
+    dialog --backtitle "Installation du site web de Cairn devices" --title "Htpasswd protection" \
+    --ok-label "Next" --msgbox "
+In order to access to esmweb monitoring page you have to go to this url :		
+https://esmweb.$domainName/
+
+ID : $email
+Password : Your password installation" 11 70
 
     systemctl restart apache2
 
