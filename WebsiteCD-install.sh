@@ -1208,7 +1208,6 @@ Install_WebsiteCD()
   rm master.zip 
   rm -r /var/www/CairnDevices/WebSiteCD-master/
   rm /var/www/CairnDevices/WebsiteCD-install.sh
-  rm -r /var/www/CairnDevices/SQL/
   echo -e "Installation de du site web de Cairn Devices.......\033[32mFait\033[00m"
   sleep 4
   
@@ -1261,10 +1260,10 @@ Install_WebsiteCD()
   mysql -h localhost -p${internalPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Captcha.sql
   mysql -h localhost -p${internalPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Text_content.sql
   mysql -h localhost -p${internalPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Member.sql
-  mysql -h localhost -p${internalPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Projects.sql
   mysql -h localhost -p${internalPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Colors.sql
-  mysql -h localhost -p${internalPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Project_types.sql
   
+  rm -r /var/www/CairnDevices/SQL/
+
   echo -e "Ajout des bases de données.......\033[32mDone\033[00m"
   sleep 4
 }
@@ -1871,22 +1870,24 @@ body
 {
 	background-color: #6c548b;
 	font-size: LARGE;
-        width: 306px;
-        height: 36px;
-        border: none;
-        border-radius: 3px;
+	width: 306px;
+	height: 36px;
+	border: none;
+	border-radius: 3px;
 	color: white;
 	margin-top: 5px;
 }
 " >> /var/www/esmweb/web/css/connexion.css
 
-    $esmpasshash=$(echo -n $adminPass | sha256sum | sed 's/  -//g')
+    esmpasshash=$(echo -n $adminPass | sha256sum | sed 's/  -//g')
 
     echo "Admin" >>  /var/www/esmweb/.htpassword
-	echo "$esmpasshash" >>  /var/www/esmweb/.htpassword
+	echo $esmpasshash >>  /var/www/esmweb/.htpassword
+
+    chmod 644 /var/www/esmweb/.htpassword
+    chown www-data:www-data /var/www/esmweb/.htpassword
 
   }
-
 
   htpasswd_protection()
   {
