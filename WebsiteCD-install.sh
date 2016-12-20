@@ -1283,7 +1283,7 @@ Security_app()
     while [ "$email" == "" ]      
     do
       dialog --backtitle "Cairngit installation" --title "Email for security reports"\
-      --inputbox "         /!\\ Should be external of this server /!\\" 7 60 2> $FICHTMP
+      --inputbox "        /!\\ Should be external of this server /!\\" 7 60 2> $FICHTMP
       email=`cat $FICHTMP`
     done
     hostname=$(hostname)
@@ -1744,24 +1744,7 @@ esmweb.$domainName.	0	A	ipv4 of your server" 8 70
      sed -i "s/\"list\": \[/\"list\": \[\n            {\n                \"name\": \"Web Server HTTPS\",\n                \"host\": \"localhost\",\n                \"port\": 443,\n                \"protocol\": \"tcp\"\n            },\n/g" /var/www/esmweb/conf/esm.config.json
 
      # Auth php
-     sed -i "s/^<?php/<?php 
-session_start();
-#Access
-\$redirect = \"connexion.php\";
-
-if(isset(\$_SESSION['esmAdmin']))
-{
-        if(\$_SESSION['esmAdmin'] != 'true')
-        {
-                header(\"Location: \$redirect\");
-        }
-}
-else
-{
-        header(\"Location: \$redirect\");
-}
-
-/g" /var/www/esmweb/index.php
+     sed -i "s/^<?php/<?php \nsession_start();\n#Access\n\$redirect = \"connexion.php\";\n\nif(isset(\$_SESSION['esmAdmin']))\n{\n        if(\$_SESSION['esmAdmin'] != 'true')\n        {\n                header(\"Location: \$redirect\");\n        }\n}\nelse\n{\n        header(\"Location: \$redirect\");\n}\n\n/g" /var/www/esmweb/index.php
 
 echo "<?php
 session_start();
@@ -1852,7 +1835,7 @@ body
 	padding: 10px;
 	background-color: #9775c1;		
 	border-radius: 5px;
-	border: 1px #3a2d4b;
+	border: 1px solid #8769af;
 }
 
 .connexion_field
@@ -1872,7 +1855,7 @@ body
 	font-size: LARGE;
 	width: 306px;
 	height: 36px;
-	border: none;
+	border: 1px solid #5e4979;
 	border-radius: 3px;
 	color: white;
 	margin-top: 5px;
@@ -2085,6 +2068,57 @@ Dev_utils()
   
 }
 
+Install_Piwik()
+{
+  #Create database
+  mysql -u root -p${internalPass} -e "CREATE DATABASE piwik;"
+  mysql -u root -p${internalPass} -e "CREATE USER 'piwik'@'localhost' IDENTIFIED BY '$internalPass';"
+  mysql -u root -p${internalPass} -e "GRANT USAGE ON *.* TO 'piwik'@'localhost';"
+  mysql -u root -p${internalPass} -e "GRANT ALL PRIVILEGES ON piwik.* TO 'piwik'@'localhost';"
+
+  # Installation of Piwik
+  wget https://builds.piwik.org/piwik.zip
+  unzip piwik.zip  -d /var/www/
+  rm  piwik.zip
+  rm /var/www/How\ to\ install\ Piwik.html
+  mkdir /var/www/piwik/logs/
+
+  chown www-data:www-data /var/www/piwik/ -Rf
+  chmod 750 piwik/ -Rf
+
+  # Apache2 configuration for Piwik		
+  echo "<VirtualHost *:80>" > /etc/apache2/sites-available/piwik.conf
+  echo "ServerAdmin postmaster@$domainName" >> /etc/apache2/sites-available/piwik.conf
+  echo "ServerName piwik.$domainName" >> /etc/apache2/sites-available/piwik.conf
+  echo "ServerAlias piwik.$domainName" >> /etc/apache2/sites-available/piwik.conf
+  echo "DocumentRoot /var/www/piwik/" >> /etc/apache2/sites-available/piwik.conf
+  echo "# Pass the default character set" >> /etc/apache2/sites-available/piwik.conf
+  echo "AddDefaultCharset utf-8" >> /etc/apache2/sites-available/piwik.conf
+  echo "# Containment of piwik" >> /etc/apache2/sites-available/piwik.conf
+  echo "php_admin_value open_basedir /var/www/piwik/" >> /etc/apache2/sites-available/piwik.conf
+  echo "# Prohibit access to files starting with a dot" >> /etc/apache2/sites-available/piwik.conf
+  echo "<FilesMatch "^\\.">" >> /etc/apache2/sites-available/piwik.conf
+  echo "    Order allow,deny" >> /etc/apache2/sites-available/piwik.conf
+  echo "    Deny from all" >> /etc/apache2/sites-available/piwik.conf
+  echo "</FilesMatch>" >> /etc/apache2/sites-available/piwik.conf
+  echo "<Directory /var/www/piwik/ >" >> /etc/apache2/sites-available/piwik.conf
+  echo "AllowOverride All" >> /etc/apache2/sites-available/piwik.conf
+  echo "</Directory>" >> /etc/apache2/sites-available/piwik.conf
+  echo "ErrorLog /var/www/piwik/logs/error.log" >> /etc/apache2/sites-available/piwik.conf
+  echo "CustomLog /var/www/piwik/logs/access.log combined" >> /etc/apache2/sites-available/piwik.conf
+  echo "</VirtualHost>" >> /etc/apache2/sites-available/piwik.conf
+  
+  a2ensite piwik.conf
+  systemctl restart apache2
+
+    # DNS for Piwik
+    dialog --backtitle "Installation du site web de Cairn devices" --title "DNS" \
+    --ok-label "Next" --msgbox "
+In order to access to Piwik page you have to update your DNS configuration :		
+piwik.$domainName.	0	A	ipv4 of your server" 8 70
+
+}
+
 Cleanning()
 {
   apt-get -y autoremove
@@ -2180,6 +2214,7 @@ then
   Install_Rainloop
   Install_Postgrey
   Install_WebsiteCD
+  Install_Piwik
   Security_app
   ItsCert
   Cleanning
@@ -2204,6 +2239,7 @@ then
   Install_Rainloop
   Install_Postgrey
   Install_WebsiteCD
+  Install_Piwik
   Security_app
   ItsCert
   Dev_utils
