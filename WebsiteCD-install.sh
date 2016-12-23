@@ -1236,6 +1236,8 @@ Install_WebsiteCD()
   echo "CustomLog /var/www/CairnDevices/logs/access.log combined" >> /etc/apache2/sites-available/CairnDevices.conf
   echo "</VirtualHost>" >> /etc/apache2/sites-available/CairnDevices.conf
   
+  chown -R www-data:www-data /var/www/CairnDevices/
+
   a2dissite 000-default.conf
   a2ensite CairnDevices
   systemctl restart apache2
