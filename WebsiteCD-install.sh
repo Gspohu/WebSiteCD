@@ -45,12 +45,12 @@ Install_Apache2()
   
 Install_Mysql()
 {
-  echo "mysql-server mysql-server/root_password password $internalPass" | sudo debconf-set-selections
-  echo "mysql-server mysql-server/root_password_again password $internalPass" | sudo debconf-set-selections
+  echo "mysql-server mysql-server/root_password password $adminPass" | sudo debconf-set-selections
+  echo "mysql-server mysql-server/root_password_again password $adminPass" | sudo debconf-set-selections
   apt-get -y install mysql-server
-  mysql -u root -p${internalPass} -e "DELETE FROM mysql.user WHERE User=''"
-  mysql -u root -p${internalPass} -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%'"
-  mysql -u root -p${internalPass} -e "FLUSH PRIVILEGES"
+  mysql -u root -p${adminPass} -e "DELETE FROM mysql.user WHERE User=''"
+  mysql -u root -p${adminPass} -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%'"
+  mysql -u root -p${adminPass} -e "FLUSH PRIVILEGES"
   systemctl restart apache2
 
   echo "# Set engine in utf8 by default" >> /etc/mysql/mysql.conf.d/mysqld.cnf
@@ -114,10 +114,10 @@ $domainName.	600	SPF	\"v=spf1 a mx ptr ip4:ipv4 of your server include:_spf.goog
   apt-get -y install postfix postfix-mysql postfix-policyd-spf-python
   
   # Create database
-  mysql -u root -p${internalPass} -e "CREATE DATABASE postfix;"
-  mysql -u root -p${internalPass} -e "CREATE USER 'postfix'@'localhost' IDENTIFIED BY '$internalPass';"
-  mysql -u root -p${internalPass} -e "GRANT USAGE ON *.* TO 'postfix'@'localhost';"
-  mysql -u root -p${internalPass} -e "GRANT ALL PRIVILEGES ON postfix.* TO 'postfix'@'localhost';"
+  mysql -u root -p${adminPass} -e "CREATE DATABASE postfix;"
+  mysql -u root -p${adminPass} -e "CREATE USER 'postfix'@'localhost' IDENTIFIED BY '$internalPass';"
+  mysql -u root -p${adminPass} -e "GRANT USAGE ON *.* TO 'postfix'@'localhost';"
+  mysql -u root -p${adminPass} -e "GRANT ALL PRIVILEGES ON postfix.* TO 'postfix'@'localhost';"
   
   # Install Postfixadmin
   wget https://downloads.sourceforge.net/project/postfixadmin/postfixadmin/postfixadmin-3.0/postfixadmin-3.0.tar.gz
@@ -1110,10 +1110,10 @@ Install_Rainloop()
   cd ~
 
   # Create database
-  mysql -u root -p${internalPass} -e "CREATE DATABASE rainloop;"
-  mysql -u root -p${internalPass} -e "CREATE USER 'rainloop'@'localhost' IDENTIFIED BY '$internalPass';"
-  mysql -u root -p${internalPass} -e "GRANT USAGE ON *.* TO 'rainloop'@'localhost';"
-  mysql -u root -p${internalPass} -e "GRANT ALL PRIVILEGES ON rainloop.* TO rainloop@localhost IDENTIFIED BY '$internalPass';"
+  mysql -u root -p${adminPass} -e "CREATE DATABASE rainloop;"
+  mysql -u root -p${adminPass} -e "CREATE USER 'rainloop'@'localhost' IDENTIFIED BY '$internalPass';"
+  mysql -u root -p${adminPass} -e "GRANT USAGE ON *.* TO 'rainloop'@'localhost';"
+  mysql -u root -p${adminPass} -e "GRANT ALL PRIVILEGES ON rainloop.* TO rainloop@localhost IDENTIFIED BY '$internalPass';"
   
   # Apache2 configuration for Rainloop		
   echo "<VirtualHost *:80>" > /etc/apache2/sites-available/rainloop.conf
@@ -1257,12 +1257,12 @@ Install_WebsiteCD()
   chown www-data:www-data /var/www/CairnDevices/.htaccess
   
   # Ajout des bases de données
-  mysql -u root -p${internalPass} -e "CREATE DATABASE CairnDevices;"
-  mysql -u root -p${internalPass} -e "GRANT ALL PRIVILEGES ON CairnDevices.* TO CairnDevices@localhost IDENTIFIED BY '$internalPass';"
-  mysql -h localhost -p${internalPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Captcha.sql
-  mysql -h localhost -p${internalPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Text_content.sql
-  mysql -h localhost -p${internalPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Member.sql
-  mysql -h localhost -p${internalPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Colors.sql
+  mysql -u root -p${adminPass} -e "CREATE DATABASE CairnDevices;"
+  mysql -u root -p${adminPass} -e "GRANT ALL PRIVILEGES ON CairnDevices.* TO CairnDevices@localhost IDENTIFIED BY '$internalPass';"
+  mysql -h localhost -p${adminPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Captcha.sql
+  mysql -h localhost -p${adminPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Text_content.sql
+  mysql -h localhost -p${adminPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Member.sql
+  mysql -h localhost -p${adminPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Colors.sql
   
   rm -r /var/www/CairnDevices/SQL/
 
@@ -1375,10 +1375,10 @@ Security_app()
   
   chown snort.snort /var/log/snort/barnyard2.waldo
   
-  mysql -u root -p${internalPass} -e "CREATE DATABASE snort;"
-  mysql -u root -p${internalPass} -e "CREATE USER 'snort'@'localhost' IDENTIFIED BY '$internalPass';"
-  mysql -u root -p${internalPass} -e "GRANT USAGE ON *.* TO 'snort'@'localhost';"
-  mysql -u root -p${internalPass} -e "GRANT ALL PRIVILEGES ON snort.* TO 'snort'@'localhost';"
+  mysql -u root -p${adminPass} -e "CREATE DATABASE snort;"
+  mysql -u root -p${adminPass} -e "CREATE USER 'snort'@'localhost' IDENTIFIED BY '$internalPass';"
+  mysql -u root -p${adminPass} -e "GRANT USAGE ON *.* TO 'snort'@'localhost';"
+  mysql -u root -p${adminPass} -e "GRANT ALL PRIVILEGES ON snort.* TO 'snort'@'localhost';"
   
   echo "output database: log, mysql, user=snort password=$internalPass dbname=snort host=localhost" >> /etc/snort/barnyard2.conf
   
@@ -2073,10 +2073,10 @@ Dev_utils()
 Install_Piwik()
 {
   #Create database
-  mysql -u root -p${internalPass} -e "CREATE DATABASE piwik;"
-  mysql -u root -p${internalPass} -e "CREATE USER 'piwik'@'localhost' IDENTIFIED BY '$internalPass';"
-  mysql -u root -p${internalPass} -e "GRANT USAGE ON *.* TO 'piwik'@'localhost';"
-  mysql -u root -p${internalPass} -e "GRANT ALL PRIVILEGES ON piwik.* TO 'piwik'@'localhost';"
+  mysql -u root -p${adminPass} -e "CREATE DATABASE piwik;"
+  mysql -u root -p${adminPass} -e "CREATE USER 'piwik'@'localhost' IDENTIFIED BY '$internalPass';"
+  mysql -u root -p${adminPass} -e "GRANT USAGE ON *.* TO 'piwik'@'localhost';"
+  mysql -u root -p${adminPass} -e "GRANT ALL PRIVILEGES ON piwik.* TO 'piwik'@'localhost';"
 
   # Installation of Piwik
   wget https://builds.piwik.org/piwik.zip
@@ -2127,9 +2127,9 @@ piwik.$domainName.	0	A	ipv4 of your server" 8 70
     # Vérifier que tout est OK
 #  php -f /var/www/piwik/index.php "action=databaseSetup" ""
 
-  piwikPass=$(php -r 'echo password_hash(md5("'$adminPass'"), PASSWORD_DEFAULT) . "\n";')
+  piwikPass=$(php -r 'echo password_hash(md5("$adminPass"), PASSWORD_DEFAULT) . "\n";')
 
-  mysql -u root -p${internalPass} -e "UPDATE \`piwik_user\` SET \`password\` = "$piwikPass" WHERE \`login\` = 'admin' AND superuser_access = 1"
+  mysql -u root -p${adminPass} -D piwik -e "UPDATE \`piwik_user\` SET \`password\` = \"$piwikPass\" WHERE \`login\` = 'admin' AND superuser_access = 1"
 
   piwikPass="0"
 
