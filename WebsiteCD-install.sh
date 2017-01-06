@@ -1285,7 +1285,7 @@ Security_app()
     while [ "$email" == "" ]      
     do
       dialog --backtitle "Cairngit installation" --title "Email for security reports"\
-      --inputbox "        /!\\ Should be external of this server /!\\" 7 60 2> $FICHTMP
+      --inputbox "       /!\\ Should be external of this server /!\\" 7 60 2> $FICHTMP
       email=`cat $FICHTMP`
     done
     hostname=$(hostname)
@@ -2118,6 +2118,96 @@ Install_Piwik()
     --ok-label "Next" --msgbox "
 In order to access to Piwik page you have to update your DNS configuration :		
 piwik.$domainName.	0	A	ipv4 of your server" 8 70
+
+  # Piwik configuration
+#  sed -i "1 s/<?php/<?php\nif (\!isset(\$_SERVER[\"HTTP_HOST\"]))\n{\n    parse_str(\$argv[1], \$_GET);\n    parse_str(\$argv[2], \$_POST);\n}\n\$_SERVER[\'REQUEST_METHOD \']=\'POST\';\n\$_SERVER[\'HTTP_HOST\']=\'$domainName\';/g" /var/www/piwik/index.php
+
+#  php -f /var/www/piwik/index.php "" ""
+#  php -f /var/www/piwik/index.php "action=systemCheck" ""
+    # Vérifier que tout est OK
+#  php -f /var/www/piwik/index.php "action=databaseSetup" ""
+
+  piwikPass=$(php -r 'echo password_hash(md5("'$adminPass'"), PASSWORD_DEFAULT) . "\n";')
+
+  mysql -u root -p${internalPass} -e "UPDATE \`piwik_user\` SET \`password\` = "$piwikPass" WHERE \`login\` = 'admin' AND superuser_access = 1"
+
+  piwikPass="0"
+
+  echo '; <?php exit; ?> DO NOT REMOVE THIS LINE' >> /var/www/piwik/config/config.ini.php
+  echo '; file automatically generated or modified by Piwik; you can manually override the default values in global.ini.php by redefining them in this file.' >> /var/www/piwik/config/config.ini.php
+  echo '[database]' >> /var/www/piwik/config/config.ini.php
+  echo 'host = "127.0.0.1"' >> /var/www/piwik/config/config.ini.php
+  echo 'username = "piwik"' >> /var/www/piwik/config/config.ini.php
+  echo 'password = "'$internalPass'"' >> /var/www/piwik/config/config.ini.php
+  echo 'dbname = "piwik"' >> /var/www/piwik/config/config.ini.php
+  echo 'tables_prefix = "piwik_"' >> /var/www/piwik/config/config.ini.php
+  echo '' >> /var/www/piwik/config/config.ini.php
+  echo '[General]' >> /var/www/piwik/config/config.ini.php
+  echo 'salt = ""' >> /var/www/piwik/config/config.ini.php
+  echo 'trusted_hosts[] = "piwik.'$domainName'"' >> /var/www/piwik/config/config.ini.php
+  echo 'trusted_hosts[] = "'$domainName'"' >> /var/www/piwik/config/config.ini.php
+  echo '' >> /var/www/piwik/config/config.ini.php
+  echo '[PluginsInstalled]' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "Diagnostics"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "Login"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "CoreAdminHome"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "UsersManager"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "SitesManager"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "Installation"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "Monolog"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "Intl"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "CorePluginsAdmin"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "CoreHome"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "WebsiteMeasurable"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "CoreVisualizations"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "Proxy"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "API"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "ExamplePlugin"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "Widgetize"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "Transitions"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "LanguagesManager"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "Actions"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "Dashboard"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "MultiSites"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "Referrers"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "UserLanguage"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "DevicesDetection"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "Goals"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "Ecommerce"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "SEO"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "Events"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "UserCountry"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "VisitsSummary"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "VisitFrequency"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "VisitTime"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "VisitorInterest"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "ExampleAPI"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "RssWidget"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "Feedback"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "CoreUpdater"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "CoreConsole"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "ScheduledReports"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "UserCountryMap"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "Live"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "CustomVariables"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "PrivacyManager"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "ImageGraph"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "Annotations"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "MobileMessaging"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "Overlay"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "SegmentEditor"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "Insights"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "Morpheus"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "Contents"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "BulkTracking"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "Resolution"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "DevicePlugins"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "Heartbeat"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "Marketplace"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "ProfessionalServices"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "UserId"' >> /var/www/piwik/config/config.ini.php
+  echo 'PluginsInstalled[] = "CustomPiwikJs"' >> /var/www/piwik/config/config.ini.php
+  echo '' >> /var/www/piwik/config/config.ini.php
 
 }
 
