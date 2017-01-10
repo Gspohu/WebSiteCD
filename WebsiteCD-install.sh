@@ -173,7 +173,7 @@ $domainName.	600	SPF	\"v=spf1 a mx ptr ip4:ipv4 of your server include:_spf.goog
   
   cd /var/www/postfixadmin/
   
-  php -f /var/www/postfixadmin/setup.php "form=createadmin&setup_password=$adminPass&username=admin@$domainName&password=$adminPass&password2=$adminPass"
+  php -f /var/www/postfixadmin/setup.php "form=createadmin&setup_password=$adminPass&username=admin@$domainName&password=$adminPass&password2=$adminPass" >> /dev/null
   
   cd ~
   
@@ -1151,7 +1151,7 @@ Install_Rainloop()
   echo "" >> changeAdminPasswd.php
   echo "?>" >> changeAdminPasswd.php
   
-  php -f changeAdminPasswd.php
+  php -f changeAdminPasswd.php >> /dev/null
   
   rm changeAdminPasswd.php
 
@@ -1295,7 +1295,7 @@ Security_app()
   {  
     # Configuration letsencrypt cerbot
     apt-get -y install python-letsencrypt-apache
-    letsencrypt --apache  --email $email -d $domainName -d rainloop.$domainName  -d postfixadmin.$domainName 
+    letsencrypt --apache  --email $email -d $domainName -d rainloop.$domainName  -d postfixadmin.$domainName
     echo -e "Installation de let's encrypt.......\033[32mDone\033[00m"
     sleep 4
   
@@ -1872,6 +1872,11 @@ body
     chmod 644 /var/www/esmweb/.htpassword
     chown www-data:www-data /var/www/esmweb/.htpassword
 
+    if [ "$itscert" = "yes" ]
+    then
+      letsencrypt --apache  --email $email -d esmweb.$domainName
+    fi
+
   }
 
   htpasswd_protection()
@@ -2085,9 +2090,6 @@ Install_Piwik()
   rm /var/www/How\ to\ install\ Piwik.html
   mkdir /var/www/piwik/logs/
 
-  chown www-data:www-data /var/www/piwik/ -Rf
-  chmod 750 piwik/ -Rf
-
   # Apache2 configuration for Piwik		
   echo "<VirtualHost *:80>" > /etc/apache2/sites-available/piwik.conf
   echo "ServerAdmin postmaster@$domainName" >> /etc/apache2/sites-available/piwik.conf
@@ -2122,20 +2124,33 @@ piwik.$domainName.	0	A	ipv4 of your server" 8 70
   # Piwik configuration
   publicIP=$(ip route get 8.8.8.8 | awk '{print $NF; exit}')
 
-  sed -i "1 s/<?php/<?php\nif (\!isset(\$_SERVER[\"HTTP_HOST\"]))\n{\n    parse_str(\$argv[1], \$_GET);\n    parse_str(\$argv[2], \$_POST);\n}\n\$_SERVER[\'REQUEST_METHOD \']=\'POST\';\n\$_SERVER[\'HTTP_HOST\']=\'$domainName\';/g" /var/www/piwik/index.php
-  sed -i "59 s/false/true/g" /var/www/piwik/core/Application/Kernel/EnvironmentValidator.php
+  #sed -i "1 s/<?php/<?php\nif (\!isset(\$_SERVER[\"HTTP_HOST\"]))\n{\n    parse_str(\$argv[1], \$_GET);\n    parse_str(\$argv[2], \$_POST);\n}\n\$_SERVER[\'REQUEST_METHOD \']=\'POST\';\n\$_SERVER[\'HTTP_HOST\']=\'$domainName\';/g" /var/www/piwik/index.php
+  #sed -i "59 s/false/true/g" /var/www/piwik/core/Application/Kernel/EnvironmentValidator.php
 
-  php -f /var/www/piwik/index.php "" ""
-  php -f /var/www/piwik/index.php "action=systemCheck" ""
+  #php -f /var/www/piwik/index.php "" ""  >> /dev/null
+  #php -f /var/www/piwik/index.php "action=systemCheck" ""  >> /dev/null
     # Vérifier que tout est OK
-  php -f /var/www/piwik/index.php "action=databaseSetup" "type=InnoDB&host=127.0.0.1&username=piwik&password=$internalPass&dbname=piwik&tables_prefix=piwik_&adapter=PDO\MYSQL"
-  php -f /var/www/piwik/index.php "action=setupSuperUser&module=Installation" "login=admin&password=$adminPass&password_bis=$adminPass&email=$email&subscribe_newsletter_piwikorg=1&subscribe_newsletter_professionalservices=1"
-  php -f /var/www/piwik/index.php "action=firstWebsiteSetup&module=Installation" "siteName=$domainName&url=$domainName&timezone=UTC&ecommerce=0"
+  #php -f /var/www/piwik/index.php "action=databaseSetup" "type=InnoDB&host=127.0.0.1&username=piwik&password=$internalPass&dbname=piwik&tables_prefix=piwik_&adapter=PDO\MYSQL"  >> /dev/null
+  #php -f /var/www/piwik/index.php "action=setupSuperUser&module=Installation" "login=admin&password=$adminPass&password_bis=$adminPass&email=$email&subscribe_newsletter_piwikorg=1&subscribe_newsletter_professionalservices=1"  >> /dev/null
+  #php -f /var/www/piwik/index.php "action=firstWebsiteSetup&module=Installation" "siteName=$domainName&url=$domainName&timezone=UTC&ecommerce=0"  >> /dev/null
+
+  curl -L -d "" http://piwik.$domainName/index.php?action=systemCheck
+  curl -L -d "type=InnoDB&host=127.0.0.1&username=piwik&password=$internalPass&dbname=piwik&tables_prefix=piwik_&adapter=PDO\MYSQL" http://piwik.$domainName/index.php?action=databaseSetup
+  curl -L -d "login=admin&password=$adminPass&password_bis=$adminPass&email=$email&subscribe_newsletter_piwikorg=1&subscribe_newsletter_professionalservices=1" http://piwik.$domainName/index.php?action=setupSuperUser&module=Installation
+  curl -L -d "siteName=$domainName&url=$domainName&timezone=UTC&ecommerce=0" http://piwik.$domainName/index.php?action=firstWebsiteSetup&module=Installation
+
   sed -i "6 s/IP.IP.IP.IP/$publicIP/g" /var/www/CairnDevices/js/piwik/piwik.js
+  #sed -i '2,8d' /var/www/piwik/index.php
+  #sed -i "59 s/true/false/g" /var/www/piwik/core/Application/Kernel/EnvironmentValidator.php  
 
-  sed -i '2,8d' /var/www/piwik/index.php
-  sed -i "59 s/true/false/g" /var/www/piwik/core/Application/Kernel/EnvironmentValidator.php  
+  chown www-data:www-data /var/www/piwik/ -Rf
+  chmod 750 piwik/ -Rf
 
+  # SSL
+  if [ "$itscert" = "yes" ]
+  then
+    letsencrypt --apache  --email $email -d piwik.$domainName
+  fi
 
   #php -f /var/www/piwik/index.php "action=trackingCode&module=Installation&site_idSite=1&site_name=$domainName" | grep A 13 "<script type=\"text/javascript\">"
   #php -f /var/www/piwik/index.php "action=finished&module=Installation&site_idSite=1&site_name=$domainName"

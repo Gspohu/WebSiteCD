@@ -9,6 +9,7 @@
                 <meta charset="utf-8" />
                 <title>Cairn Devices – Upgrade in freedom</title>
                 <link href="css/index" rel="stylesheet" />
+		<script type="text/javascript" src="js/piwik/piwik.js"></script>
         </head>
 
         <body>
