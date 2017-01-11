@@ -24,6 +24,7 @@ Install_dependency()
   apt-get -y install dialog 
   apt-get -y install git
   apt-get -y install unzip
+  apt-get -y install apt-transport-https
 }
   
 
@@ -1259,10 +1260,10 @@ Install_WebsiteCD()
   # Ajout des bases de données
   mysql -u root -p${adminPass} -e "CREATE DATABASE CairnDevices;"
   mysql -u root -p${adminPass} -e "GRANT ALL PRIVILEGES ON CairnDevices.* TO CairnDevices@localhost IDENTIFIED BY '$internalPass';"
-  mysql -h localhost -p${adminPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Captcha.sql
-  mysql -h localhost -p${adminPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Text_content.sql
-  mysql -h localhost -p${adminPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Member.sql
-  mysql -h localhost -p${adminPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Colors.sql
+  mysql -h localhost -p${internalPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Captcha.sql
+  mysql -h localhost -p${internalPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Text_content.sql
+  mysql -h localhost -p${internalPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Member.sql
+  mysql -h localhost -p${internalPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Colors.sql
   
   rm -r /var/www/CairnDevices/SQL/
 
@@ -1292,23 +1293,31 @@ Security_app()
   }
 
   Lets_cert()
-  {  
+  {
     # Configuration letsencrypt cerbot
     apt-get -y install python-letsencrypt-apache
-    letsencrypt --apache  --email $email -d $domainName -d rainloop.$domainName  -d postfixadmin.$domainName
+    letsencrypt --apache  --email $email -d $domainName -d rainloop.$domainName  -d postfixadmin.$domainName -d piwik.$domainName
     echo -e "Installation de let's encrypt.......\033[32mDone\033[00m"
     sleep 4
   
-    # Redirect all http to https
+    # Redirect http to https
     sed -i "s/<\/Directory>/<\/Directory>\nRedirect permanent \/ https:\/\/$domainName\//g" /etc/apache2/sites-available/CairnDevices.conf
     sed -i "s/<\/Directory>/<\/Directory>\nRedirect permanent \/ https:\/\/postfixadmin.$domainName\//g" /etc/apache2/sites-available/postfixadmin.conf
     sed -i "s/<\/Directory>/<\/Directory>\nRedirect permanent \/ https:\/\/rainloop.$domainName\//g" /etc/apache2/sites-available/rainloop.conf
+    sed -i "s/<\/Directory>/<\/Directory>\nRedirect permanent \/ https:\/\/piwik.$domainName\//g" /etc/apache2/sites-available/piwik.conf
   
-    # Ajout d'une règle cron pour renouveller automatique le certificat
+    # Ajout d'une règle cron pour renouveller automatiquement le certificat
     crontab -l > /tmp/crontab.tmp 
     echo "* * * 2 * letsencrypt renew" >> /tmp/crontab.tmp
     crontab /tmp/crontab.tmp
     rm /tmp/crontab.tmp
+
+    # Add SSL to modular apps
+    if [ "$esmweb" = "installed" ]
+    then
+      letsencrypt --apache  --email $email -d esmweb.$domainName
+      sed -i "s/<\/Directory>/<\/Directory>\nRedirect permanent \/ https:\/\/esmweb.$domainName\//g" /etc/apache2/sites-available/esmweb.conf
+    fi
 
     systemctl restart apache2
     systemctl restart postfix
@@ -1318,8 +1327,7 @@ Security_app()
     systemctl restart postgrey
 
     itscert="yes"
-  }  
-
+  }
 
   Check_rootkits()
   {
@@ -1329,15 +1337,21 @@ Security_app()
     rkhunter --propupd
     sed -i "s/#ALLOW_SSH_ROOT_USER=no/ALLOW_SSH_ROOT_USER=yes/g" /etc/rkhunter.conf
 
+    # Configuration of lynis
+    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C80E383C3DE9F082E01391A0366C67DE91CA5D5F
+    echo "deb https://packages.cisofy.com/community/lynis/deb/ xenial main" > /etc/apt/sources.list.d/cisofy-lynis.list
+
     # Crontab rules for anti rootkit
     crontab -l > /tmp/crontab.tmp
-    echo "0 0 * * 0 root rkhunter --update" >> /tmp/crontab.tmp
-    echo "0 1 * * 0 root rkhunter --checkall --report-warnings-only | mail -s \"[RkHunter][$hostname on $domainName] Rapport de vérification\" $email" >> /tmp/crontab.tmp
+    echo "0 0 * * 0 root apt update" >> /tmp/crontab.tmp
+    echo "10 0 * * 0 root rkhunter --update" >> /tmp/crontab.tmp
+    echo "0 1 * * 0 root rkhunter --checkall --nocolors --skip-keypress | mail -s \"RkHunter on $hostname\" $email" >> /tmp/crontab.tmp
 
-    echo "0 2 * * 0 root chkrootkit -q | mail -s \"[ChkRootkit][$hostname on $domainName] Rapport de vérification\" $email" >> /tmp/crontab.tmp
+    echo "0 2 1 * * root apt install chkrootkit" >> /tmp/crontab.tmp
+    echo "10 2 * * 0 root chkrootkit | mail -s \"ChkRootkit on $hostname\" $email" >> /tmp/crontab.tmp
 
-    echo "0 3 1 * * root lynis --check-update" >> /tmp/crontab.tmp
-    echo "0 4 1 * * root lynis --check-all --cronjob -Q | mail -s \"[Lynis][$hostname on $domainName] Rapport de vérification\" $email" >> /tmp/crontab.tmp
+    echo "0 3 1 * * root apt install lynis" >> /tmp/crontab.tmp
+    echo "10 3 1 * * root lynis --check-all --cronjob -Q | mail -s \"Lynis on $hostname\" $email" >> /tmp/crontab.tmp
     crontab /tmp/crontab.tmp
     rm /tmp/crontab.tmp
   }
@@ -1872,10 +1886,7 @@ body
     chmod 644 /var/www/esmweb/.htpassword
     chown www-data:www-data /var/www/esmweb/.htpassword
 
-    if [ "$itscert" = "yes" ]
-    then
-      letsencrypt --apache  --email $email -d esmweb.$domainName
-    fi
+    esmweb="installed"
 
   }
 
@@ -2090,6 +2101,9 @@ Install_Piwik()
   rm /var/www/How\ to\ install\ Piwik.html
   mkdir /var/www/piwik/logs/
 
+  chown www-data:www-data /var/www/piwik/ -Rf
+  chmod 750 piwik/ -Rf
+
   # Apache2 configuration for Piwik		
   echo "<VirtualHost *:80>" > /etc/apache2/sites-available/piwik.conf
   echo "ServerAdmin postmaster@$domainName" >> /etc/apache2/sites-available/piwik.conf
@@ -2122,124 +2136,35 @@ In order to access to Piwik page you have to update your DNS configuration :
 piwik.$domainName.	0	A	ipv4 of your server" 8 70
 
   # Piwik configuration
-  publicIP=$(ip route get 8.8.8.8 | awk '{print $NF; exit}')
-
-  #sed -i "1 s/<?php/<?php\nif (\!isset(\$_SERVER[\"HTTP_HOST\"]))\n{\n    parse_str(\$argv[1], \$_GET);\n    parse_str(\$argv[2], \$_POST);\n}\n\$_SERVER[\'REQUEST_METHOD \']=\'POST\';\n\$_SERVER[\'HTTP_HOST\']=\'$domainName\';/g" /var/www/piwik/index.php
-  #sed -i "59 s/false/true/g" /var/www/piwik/core/Application/Kernel/EnvironmentValidator.php
-
-  #php -f /var/www/piwik/index.php "" ""  >> /dev/null
-  #php -f /var/www/piwik/index.php "action=systemCheck" ""  >> /dev/null
-    # Vérifier que tout est OK
-  #php -f /var/www/piwik/index.php "action=databaseSetup" "type=InnoDB&host=127.0.0.1&username=piwik&password=$internalPass&dbname=piwik&tables_prefix=piwik_&adapter=PDO\MYSQL"  >> /dev/null
-  #php -f /var/www/piwik/index.php "action=setupSuperUser&module=Installation" "login=admin&password=$adminPass&password_bis=$adminPass&email=$email&subscribe_newsletter_piwikorg=1&subscribe_newsletter_professionalservices=1"  >> /dev/null
-  #php -f /var/www/piwik/index.php "action=firstWebsiteSetup&module=Installation" "siteName=$domainName&url=$domainName&timezone=UTC&ecommerce=0"  >> /dev/null
-
-  curl -L -d "" http://piwik.$domainName/index.php?action=systemCheck
-  curl -L -d "type=InnoDB&host=127.0.0.1&username=piwik&password=$internalPass&dbname=piwik&tables_prefix=piwik_&adapter=PDO\MYSQL" http://piwik.$domainName/index.php?action=databaseSetup
-  curl -L -d "login=admin&password=$adminPass&password_bis=$adminPass&email=$email&subscribe_newsletter_piwikorg=1&subscribe_newsletter_professionalservices=1" http://piwik.$domainName/index.php?action=setupSuperUser&module=Installation
-  curl -L -d "siteName=$domainName&url=$domainName&timezone=UTC&ecommerce=0" http://piwik.$domainName/index.php?action=firstWebsiteSetup&module=Installation
-
-  sed -i "6 s/IP.IP.IP.IP/$publicIP/g" /var/www/CairnDevices/js/piwik/piwik.js
-  #sed -i '2,8d' /var/www/piwik/index.php
-  #sed -i "59 s/true/false/g" /var/www/piwik/core/Application/Kernel/EnvironmentValidator.php  
-
-  chown www-data:www-data /var/www/piwik/ -Rf
-  chmod 750 piwik/ -Rf
-
   # SSL
   if [ "$itscert" = "yes" ]
   then
-    letsencrypt --apache  --email $email -d piwik.$domainName
+    Sssl="s"
+  else
+    Sssl=""
   fi
 
-  #php -f /var/www/piwik/index.php "action=trackingCode&module=Installation&site_idSite=1&site_name=$domainName" | grep A 13 "<script type=\"text/javascript\">"
-  #php -f /var/www/piwik/index.php "action=finished&module=Installation&site_idSite=1&site_name=$domainName"
+    email=""
+    # Ask for email adresse for Piwik
+    while [ "$email" == "" ]
+    do
+      dialog --backtitle "Cairngit installation" --title "Email for Piwik"\
+      --inputbox "    /!\\ This email will be sent to Piwik servers /!\\" 7 60 2> $FICHTMP
+      email=`cat $FICHTMP`
+    done
 
-  #piwikPass=$(php -r 'echo password_hash(md5("$adminPass"), PASSWORD_DEFAULT) . "\n";')
-  #date=$(date --rfc-3339=seconds | cut -d "+" -f1)
+  curl -L -d "" "http$Sssl://piwik.$domainName/index.php?action=systemCheck"
+  curl -L -d "type=InnoDB&host=127.0.0.1&username=piwik&password=$internalPass&dbname=piwik&tables_prefix=piwik_&adapter=PDO\MYSQL" "http$Sssl://piwik.$domainName/index.php?action=databaseSetup"
+  curl -L -d "login=admin&password=$adminPass&password_bis=$adminPass&email=$email&subscribe_newsletter_piwikorg=1&subscribe_newsletter_professionalservices=1" "http$Sssl://piwik.$domainName/index.php?action=setupSuperUser&module=Installation"
+  curl -L -d "siteName=$domainName&url=$domainName&timezone=UTC&ecommerce=0" "http$Sssl://piwik.$domainName/index.php?action=firstWebsiteSetup&module=Installation"
+  curl -L -d "" "http$Sssl://piwik.$domainName/index.php?action=trackingCode&module=Installation&site_idSite=1&site_name=$domainName"
+  curl -L -d "" "http$Sssl://piwik.$domainName/index.php?action=finished&module=Installation&site_idSite=1&site_name=$domainName"
 
-  # EXAMPLE : mysql -h localhost -p${adminPass} -u CairnDevices CairnDevices < /var/www/CairnDevices/SQL/Colors.sql
+  sed -i "s/installation_in_progress = 1//g" /var/www/piwik/config/config.ini.php
+  sed -i "6 s/IP.IP.IP.IP/piwik.$domainName/g" /var/www/CairnDevices/js/piwik/piwik.js
 
-  #mysql -u root -p${adminPass} -D piwik -e "UPDATE \`piwik_user\` SET \`password\` = \"$piwikPass\", \`email\` = \"$email\", \`date_registered\` = \"$date\" WHERE \`login\` = 'admin' AND superuser_access = 1"
-
-  #piwikPass="0"
-
-#  echo '; <?php exit; ?> DO NOT REMOVE THIS LINE' >> /var/www/piwik/config/config.ini.php
-#  echo '; file automatically generated or modified by Piwik; you can manually override the default values in global.ini.php by redefining them in this file.' >> /var/www/piwik/config/config.ini.php
-#  echo '[database]' >> /var/www/piwik/config/config.ini.php
-#  echo 'host = "127.0.0.1"' >> /var/www/piwik/config/config.ini.php
-#  echo 'username = "piwik"' >> /var/www/piwik/config/config.ini.php
-#  echo 'password = "'$internalPass'"' >> /var/www/piwik/config/config.ini.php
-#  echo 'dbname = "piwik"' >> /var/www/piwik/config/config.ini.php
-#  echo 'tables_prefix = "piwik_"' >> /var/www/piwik/config/config.ini.php
-#  echo '' >> /var/www/piwik/config/config.ini.php
-#  echo '[General]' >> /var/www/piwik/config/config.ini.php
-#  echo 'salt = ""' >> /var/www/piwik/config/config.ini.php
-#  echo 'trusted_hosts[] = "piwik.'$domainName'"' >> /var/www/piwik/config/config.ini.php
-#  echo 'trusted_hosts[] = "'$domainName'"' >> /var/www/piwik/config/config.ini.php
-#  echo '' >> /var/www/piwik/config/config.ini.php
-#  echo '[PluginsInstalled]' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "Diagnostics"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "Login"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "CoreAdminHome"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "UsersManager"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "SitesManager"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "Installation"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "Monolog"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "Intl"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "CorePluginsAdmin"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "CoreHome"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "WebsiteMeasurable"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "CoreVisualizations"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "Proxy"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "API"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "ExamplePlugin"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "Widgetize"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "Transitions"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "LanguagesManager"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "Actions"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "Dashboard"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "MultiSites"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "Referrers"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "UserLanguage"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "DevicesDetection"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "Goals"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "Ecommerce"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "SEO"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "Events"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "UserCountry"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "VisitsSummary"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "VisitFrequency"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "VisitTime"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "VisitorInterest"' >> /var/www/piwik/config/config.ini.php
-# echo 'PluginsInstalled[] = "ExampleAPI"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "RssWidget"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "Feedback"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "CoreUpdater"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "CoreConsole"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "ScheduledReports"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "UserCountryMap"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "Live"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "CustomVariables"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "PrivacyManager"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "ImageGraph"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "Annotations"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "MobileMessaging"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "Overlay"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "SegmentEditor"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "Insights"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "Morpheus"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "Contents"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "BulkTracking"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "Resolution"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "DevicePlugins"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "Heartbeat"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "Marketplace"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "ProfessionalServices"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "UserId"' >> /var/www/piwik/config/config.ini.php
-#  echo 'PluginsInstalled[] = "CustomPiwikJs"' >> /var/www/piwik/config/config.ini.php
-#  echo '' >> /var/www/piwik/config/config.ini.php
-
+  chown www-data:www-data /var/www/piwik/ -Rf
+  chmod 750 piwik/ -Rf
 }
 
 Cleanning()
@@ -2270,9 +2195,9 @@ $DIALOG --clear --backtitle "Installation du site web de Cairn Devices" --title 
 valret=$?
 choix=`cat $FICHTMP`
 case $valret in
-0)	echo "'$choix' est votre choix";;
-1) 	echo "Appuyez sur Annuler.";;
-255) 	echo "Appuyez sur Echap.";;
+0)	echo "'$choix' is your choice";;
+1) 	exit 0;;
+255) 	exit 1;;
 esac
 
 mainUser=""
