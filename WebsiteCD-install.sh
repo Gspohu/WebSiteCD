@@ -1397,7 +1397,7 @@ Security_app()
   echo "output database: log, mysql, user=snort password=$internalPass dbname=snort host=localhost" >> /etc/snort/barnyard2.conf
   
   chmod o-r /etc/snort/barnyard2.conf
-  
+
 
     echo -e "Installation of Snort.......\033[32mDone\033[00m"
     sleep 4
@@ -1419,9 +1419,21 @@ echo \"User \$USER just logged in from \$ip at \$Date\" | mail -s \"SSH Login\" 
 
     systemctl restart apache2
 
-    mv /usr/share/modsecurity-crs/base_rules/modsecurity_crs_21_protocol_anomalies.conf /usr/share/modsecurity-crs/base_rules/modsecurity_crs_21_protocol_anomalies.conf.disable
+    ln -s /usr/share/modsecurity-crs/modsecurity_crs_10_setup.conf /usr/share/modsecurity-crs/activated_rules/modsecurity_crs_10_setup.conf
 
-    mv /usr/share/modsecurity-crs/base_rules/modsecurity_crs_35_bad_robots.conf /usr/share/modsecurity-crs/base_rules/modsecurity_crs_35_bad_robots.conf.disable
+    for f in `ls base_rules`; do ln -s /usr/share/modsecurity-crs/base_rules/$f /usr/share/modsecurity-crs/activated_rules/$f; done
+
+    # rm /usr/share/modsecurity-crs/activated_rules/modsecurity_crs_21_protocol_anomalies.conf
+
+    # rm /usr/share/modsecurity-crs/activated_rules/modsecurity_crs_35_bad_robots.conf
+
+    cp /etc/modsecurity/modsecurity.conf-recommended /etc/modsecurity/modsecurity.conf
+
+    sed -i "s/SecRuleEngine DetectionOnly/SecRuleEngine On/g" /etc/modsecurity/modsecurity.conf
+
+    sed -i "s/IncludeOptional \/etc\/modsecurity\/\*\.conf/IncludeOptional \/etc\/modsecurity\/*.conf\n        IncludeOptional \/usr\/share\/modsecurity-crs\/activated_rules\/*.conf/g"  /etc/apache2/mods-available/security2.conf
+
+    systemctl restart apache2
   }
 
   Hide_ApacheVersion()
