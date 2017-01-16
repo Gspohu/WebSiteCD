@@ -1243,7 +1243,7 @@ Install_WebsiteCD()
   a2ensite CairnDevices
   systemctl restart apache2
 
-  # Creation of CairnDevices user
+  # Creation of CairnDevices user FIXME
   USER="CairnDevices"
   echo "Creation of CairnDevices user"
   useradd -p $internalPass -M -r -U $USER
@@ -1421,11 +1421,16 @@ echo \"User \$USER just logged in from \$ip at \$Date\" | mail -s \"SSH Login\" 
 
     ln -s /usr/share/modsecurity-crs/modsecurity_crs_10_setup.conf /usr/share/modsecurity-crs/activated_rules/modsecurity_crs_10_setup.conf
 
-    for f in `ls base_rules`; do ln -s /usr/share/modsecurity-crs/base_rules/$f /usr/share/modsecurity-crs/activated_rules/$f; done
+    for f in `ls /usr/share/modsecurity-crs/base_rules`
+    do
+      ln -s /usr/share/modsecurity-crs/base_rules/$f /usr/share/modsecurity-crs/activated_rules/$f
+    done
 
     # rm /usr/share/modsecurity-crs/activated_rules/modsecurity_crs_21_protocol_anomalies.conf
 
     # rm /usr/share/modsecurity-crs/activated_rules/modsecurity_crs_35_bad_robots.conf
+
+    rm /usr/share/modsecurity-crs/activated_rules/modsecurity_crs_40_generic_attacks.conf
 
     cp /etc/modsecurity/modsecurity.conf-recommended /etc/modsecurity/modsecurity.conf
 
@@ -1671,7 +1676,7 @@ destemail = $email" >> /etc/fail2ban/jail.local
     done
     sed -i "5 s/Port 22/Port $sshport/g" /etc/ssh/sshd_config
     dialog --backtitle "Installation du site web de Cairn devices" --title "Changement port SSH" \
-  --ok-label "Next" --msgbox "Le port SSH à été changé pour éviter les attaques automatiques. Veuillez en prendre note. \nNouveau port : $sshport   \nPour accéder au serveur en ssh : ssh -p$sshport $mainUser@$domainName" 10 66
+  --ok-label "Next" --msgbox "Le port SSH à été changé pour éviter les attaques automatiques. Veuillez en prendre note. \nNouveau port : $sshport   \nPour accéder au serveur en ssh : ssh -p$sshport $mainUser@$domainName" 9 66
   }
 
   Install_unattendedupgrades()
@@ -1924,7 +1929,7 @@ In order to access to phpmyadmin you have to go to this url :
 https://$domainName/phpmyadmin
 
 ID : $email
-Password : Your password installation" 10 70
+Password : Your installation password" 10 70
 
     # Rainloop ?admin htpasswd protection
     sed -i "s/php\_admin\_value open\_basedir \/var\/www\/rainloop\//php\_admin\_value open\_basedir \/var\/www\/rainloop\/\nRewriteEngine On\nRewriteCond %{QUERY\_STRING} ^.*admin.*$\nRewriteRule (.*) - [E=AUTH\_NEEDED:true]/g" /etc/apache2/sites-available/rainloop.conf
@@ -1942,7 +1947,7 @@ In order to access to the admin panel of rainloop you have to go to this url :
 https://rainloop.$domainName/?admin
 
 ID : $email
-Password : Your password installation" 11 70
+Password : Your installation password" 11 70
 
     # Postfixadmin htpasswd protection
     echo "AuthUserFile /var/www/postfixadmin/.htpasswd
@@ -1966,7 +1971,7 @@ In order to access to postfixadmin you have to go to this url :
 https://postfixadmin.$domainName/
 
 ID : $email
-Password : Your password installation" 10 70
+Password : Your installation password" 10 70
 
     # Esmweb htpasswd protection
     echo "AuthUserFile /var/www/esmweb/.htpasswd
@@ -1990,7 +1995,7 @@ In order to access to esmweb monitoring page you have to go to this url :
 https://esmweb.$domainName/
 
 ID : $email
-Password : Your password installation" 11 70
+Password : Your installation password" 11 70
 
     systemctl restart apache2
 
@@ -2093,8 +2098,36 @@ Dev_utils()
   chmod +x  /usr/bin/updateCG
   chown -R $mainUser /home/$mainUser/Depots/
 
-  # Expliquer comment utiliser le mode DEV
-  
+  # Create dev user
+  devPassCrypt=$(mkpasswd  -m sha-512 -S blacksalt -s <<< $adminPass)
+
+  useradd -p $devPassCrypt -s /bin/bash -d /home/$mainUser/Depots/ dev
+
+  chown -R dev:dev /home/$mainUser/Depots/WebSiteCD
+
+  touch /var/log/devSsh.log
+  chown dev:dev /var/log/devSsh.log
+
+  echo "ip=\`echo \$SSH_CONNECTION | cut -d \" \" -f 1\`
+hostname=\`hostname\`
+Date=\$(date)
+dev=\"dev\"
+
+if [ \$USER = \$dev ]
+then
+	echo \"User \$USER just logged in from \$ip at \$Date\" >> /var/log/devSsh.log
+else
+	echo \"User \$USER just logged in from \$ip at \$Date\" | mail -s \"SSH Login\" $email &
+fi" >  /etc/ssh/sshrc
+
+  dialog --backtitle "Installation du site web de Cairn devices" --title "Password for dev user" \
+    --ok-label "Next" --msgbox "In order to use remote sync use dev user with this password :		
+Your Admin password" 7 70
+
+  devPass="0"
+
+  # TODO Expliquer comment utiliser le mode DEV
+
   
 }
 
@@ -2165,12 +2198,12 @@ piwik.$domainName.	0	A	ipv4 of your server" 8 70
       email=`cat $FICHTMP`
     done
 
-  curl -L -d "" "http$Sssl://piwik.$domainName/index.php?action=systemCheck"
-  curl -L -d "type=InnoDB&host=127.0.0.1&username=piwik&password=$internalPass&dbname=piwik&tables_prefix=piwik_&adapter=PDO\MYSQL" "http$Sssl://piwik.$domainName/index.php?action=databaseSetup"
-  curl -L -d "login=admin&password=$adminPass&password_bis=$adminPass&email=$email&subscribe_newsletter_piwikorg=1&subscribe_newsletter_professionalservices=1" "http$Sssl://piwik.$domainName/index.php?action=setupSuperUser&module=Installation"
-  curl -L -d "siteName=$domainName&url=$domainName&timezone=UTC&ecommerce=0" "http$Sssl://piwik.$domainName/index.php?action=firstWebsiteSetup&module=Installation"
-  curl -L -d "" "http$Sssl://piwik.$domainName/index.php?action=trackingCode&module=Installation&site_idSite=1&site_name=$domainName"
-  curl -L -d "" "http$Sssl://piwik.$domainName/index.php?action=finished&module=Installation&site_idSite=1&site_name=$domainName"
+  curl -L -d "" "http$Sssl://piwik.$domainName/index.php?action=systemCheck"  >> /dev/null
+  curl -L -d "type=InnoDB&host=127.0.0.1&username=piwik&password=$internalPass&dbname=piwik&tables_prefix=piwik_&adapter=PDO\MYSQL" "http$Sssl://piwik.$domainName/index.php?action=databaseSetup"  >> /dev/null
+  curl -L -d "login=admin&password=$adminPass&password_bis=$adminPass&email=$email&subscribe_newsletter_piwikorg=1&subscribe_newsletter_professionalservices=1" "http$Sssl://piwik.$domainName/index.php?action=setupSuperUser&module=Installation"  >> /dev/null
+  curl -L -d "siteName=$domainName&url=$domainName&timezone=UTC&ecommerce=0" "http$Sssl://piwik.$domainName/index.php?action=firstWebsiteSetup&module=Installation"  >> /dev/null
+  curl -L -d "" "http$Sssl://piwik.$domainName/index.php?action=trackingCode&module=Installation&site_idSite=1&site_name=$domainName"  >> /dev/null
+  curl -L -d "" "http$Sssl://piwik.$domainName/index.php?action=finished&module=Installation&site_idSite=1&site_name=$domainName"  >> /dev/null
 
   sed -i "s/installation_in_progress = 1//g" /var/www/piwik/config/config.ini.php
   sed -i "6 s/IP.IP.IP.IP/piwik.$domainName/g" /var/www/CairnDevices/js/piwik/piwik.js
