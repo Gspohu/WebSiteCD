@@ -7,9 +7,9 @@ exec 2> >(tee -a error.log)
 itscert="no"
 sshport="22"
 
-#####################
+###############################
 ###   Function declaration  ###
-#####################
+###############################
 
 Update_sys()
 {
@@ -49,9 +49,12 @@ Install_Mysql()
 	echo "mysql-server mysql-server/root_password password $adminPass" | sudo debconf-set-selections
 	echo "mysql-server mysql-server/root_password_again password $adminPass" | sudo debconf-set-selections
 	apt-get -y install mysql-server
+
+	# Secure MySQL installation
 	mysql -u root -p${adminPass} -e "DELETE FROM mysql.user WHERE User=''"
 	mysql -u root -p${adminPass} -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%'"
 	mysql -u root -p${adminPass} -e "FLUSH PRIVILEGES"
+
 	systemctl restart apache2
 
 	echo "# Set engine in utf8 by default" >> /etc/mysql/mysql.conf.d/mysqld.cnf
@@ -1190,6 +1193,7 @@ Install_Postgrey()
 	echo "/^smtpd\d+\.orange\.fr$/" >> /etc/postgrey/whitelist_clients
 
 	systemctl restart apache2
+	# BUG bug or not bug please try me
 	#mkdir /var/run/postgrey
 	#chown postgrey:postgrey /var/run/postgrey
 	#sed -i 's/PIDFILE= \/var\/run\/$DAEMON_NAME.pid/PIDFILE=\/var\/run\/$DAEMON_NAME\/$DAEMON_NAME.pid/g' /etc/init.d/postgrey
@@ -1243,7 +1247,7 @@ Install_WebsiteCD()
 	a2ensite CairnDevices
 	systemctl restart apache2
 
-	# Creation of CairnDevices user FIXME
+	# FIXME Creation of CairnDevices user
 	USER="CairnDevices"
 	echo "Creation of CairnDevices user"
 	useradd -p $internalPass -M -r -U $USER
@@ -1273,6 +1277,7 @@ Install_WebsiteCD()
 
 Security_app()
 {
+	# TODO Utilité de UFW ?
 	# Enabled UFW
 	#  ufw enable
 
@@ -1306,7 +1311,7 @@ Security_app()
 		sed -i "s/<\/Directory>/<\/Directory>\nRedirect permanent \/ https:\/\/rainloop.$domainName\//g" /etc/apache2/sites-available/rainloop.conf
 		sed -i "s/<\/Directory>/<\/Directory>\nRedirect permanent \/ https:\/\/piwik.$domainName\//g" /etc/apache2/sites-available/piwik.conf
 
-		# Ajout d'une règle cron pour renouveller automatiquement le certificat
+		# Add crontab to in order to renew the certificate
 		crontab -l > /tmp/crontab.tmp
 		echo "* * * 2 * letsencrypt renew" >> /tmp/crontab.tmp
 		crontab /tmp/crontab.tmp
@@ -1326,6 +1331,7 @@ Security_app()
 		systemctl restart opendmarc
 		systemctl restart postgrey
 
+		# TODO Vérifier qu'il n'y a pas d'érreur avant de dire c'est cert
 		itscert="yes"
 	}
 
@@ -1345,18 +1351,19 @@ Security_app()
 		crontab -l > /tmp/crontab.tmp
 		echo "0 0 * * 0 root apt update" >> /tmp/crontab.tmp
 		echo "10 0 * * 0 root rkhunter --update" >> /tmp/crontab.tmp
-		echo "0 1 * * 0 root rkhunter --checkall --nocolors --skip-keypress | mail -s \"RkHunter on $hostname\" $email" >> /tmp/crontab.tmp
+		echo "0 1 * * 0 root rkhunter --checkall --nocolors --skip-keypress | mail -s \"RkHunter on $hostname\" $email" >> /tmp/crontab.tmp # BUG rkhunter send empty mail
 
 		echo "0 2 1 * * root apt install chkrootkit" >> /tmp/crontab.tmp
-		echo "10 2 * * 0 root chkrootkit | mail -s \"ChkRootkit on $hostname\" $email" >> /tmp/crontab.tmp
+		echo "10 2 * * 0 root chkrootkit | mail -s \"ChkRootkit on $hostname\" $email" >> /tmp/crontab.tmp # BUG Chkrootkit send empty mail
 
 		echo "0 3 1 * * root apt install lynis" >> /tmp/crontab.tmp
-		echo "10 3 1 * * root lynis --check-all --cronjob -Q | mail -s \"Lynis on $hostname\" $email" >> /tmp/crontab.tmp
+		echo "10 3 1 * * root lynis --check-all --cronjob -Q | mail -s \"Lynis on $hostname\" $email" >> /tmp/crontab.tmp # BUG Lynis doesn't send mail
+
 		crontab /tmp/crontab.tmp
 		rm /tmp/crontab.tmp
 	}
 
-	Install_SNORT()
+	Install_SNORT() # TODO Installation de SNORT
 	{
 		interface=$(route | grep default | awk '{print $8}')
 
@@ -1529,7 +1536,7 @@ Security_app()
 		logpath  = /var/log/syslog
 		maxretry = 3
 		bantime  = 600" > /etc/fail2ban/jail.local
-		
+
 		# Add filter http-get-post-dos
 		echo "[Definition]" > /etc/fail2ban/filter.d/http-get-post-dos.conf
 		echo 'failregex = ^<HOST> -.*"(GET|POST).*' >> /etc/fail2ban/filter.d/http-get-post-dos.conf
@@ -1695,7 +1702,7 @@ Security_app()
 		systemctl restart apache2
 
 		# Remove blacklist ip
-		0 5 * * * find /var/lock/mod_evasive -mtime +1 -type f -exec rm -f '{}' \;
+		0 5 * * * find /var/lock/mod_evasive -mtime +1 -type f -exec rm -f '{}' \; # FIXME A mettre dans la crontab
 
 		echo "net.ipv4.conf.all.send_redirects = 0" >> /etc/sysctl.conf
 		echo "net.ipv4.conf.all.accept_source_route = 0" >> /etc/sysctl.conf
@@ -1720,7 +1727,7 @@ Security_app()
 
 	}
 
-	Install_AppArmor()
+	Install_AppArmor() # NOTE Utlité d'Apparmor dans ce contexte ?
 	{
 		apt-get -y install apparmor apparmor-profiles apparmor-utils
 	}
@@ -2051,21 +2058,21 @@ ItsCert()
 		cd /etc/ssl/
 		openssl genrsa -out mailserver.key 4096
 
-		# Ask for certificat signature
+		# Ask for certificate signature
 		openssl req -new -key mailserver.key -out mailserver.csr
 
-		# Create certificat
+		# Create certificate
 		openssl x509 -req -days 365 -in mailserver.csr -signkey mailserver.key -out mailserver.crt
 		cd ~
 
-		# Put certificat in conf file
+		# Put certificate in conf file
 		sed -i "s/\/etc\/letsencrypt\/live\/$domainName\/cert.pem/\/etc\/ssl\/mailserver.crt/g" /etc/postfix/main.cf
 		sed -i "s/\/etc\/letsencrypt\/live\/$domainName\/fullchain.pem/\/etc\/ssl\/mailserver.csr/g" /etc/postfix/main.cf
 		sed -i "s/\/etc\/letsencrypt\/live\/$domainName\/privkey.pem/\/etc\/ssl\/mailserver.key/g" /etc/postfix/main.cf
 		sed -i "s/\/etc\/letsencrypt\/live\/$domainName\/fullchain.pem/\/etc\/ssl\/mailserver.csr/g" /etc/dovecot/conf.d/10-ssl.conf
 		sed -i "s/\/etc\/letsencrypt\/live\/$domainName\/privkey.pem/\/etc\/ssl\/mailserver.key/g" /etc/dovecot/conf.d/10-ssl.conf
 
-		# Ajout d'une règle cron pour renouveller automatique le certificat
+		# Add crontab rule in order to renew the certificate
 		crontab -l > /tmp/crontab.tmp
 		echo "0 0 1 1 * openssl x509 -req -days 365 -in mailserver.csr -signkey mailserver.key -out mailserver.crt" >> /tmp/crontab.tmp
 		crontab /tmp/crontab.tmp
@@ -2092,19 +2099,19 @@ Dev_utils()
 	cd ~
 
 	echo "#!/bin/bash" >>  /usr/bin/updateCG
-	echo "rsync -a --exclude=\"Repository\" --exclude='logs' --exclude='WebsiteCD-install.sh' --exclude='SQL' /home/$mainUser/Depots/WebSiteCD/ /var/www/CairnDevices/" >>  /usr/bin/updateCG
+	echo "rsync -a --exclude=\"Repository\" --exclude='logs' --exclude='WebsiteCD-install.sh' --exclude='SQL' --exclude='js/piwik.js' /home/$mainUser/Depots/WebSiteCD/ /var/www/CairnDevices/" >>  /usr/bin/updateCG
 	echo 'echo "Update Success !"' >> /usr/bin/updateCG
 
 	chmod +x  /usr/bin/updateCG
-	chown -R $mainUser /home/$mainUser/Depots/
 
 	# Create dev user
 	devPassCrypt=$(mkpasswd  -m sha-512 -S blacksalt -s <<< $adminPass)
 
 	useradd -p $devPassCrypt -s /bin/bash -d /home/$mainUser/Depots/ dev
 
-	chown -R dev:dev /home/$mainUser/Depots/WebSiteCD
+	chown -R dev:dev /home/$mainUser/Depots
 
+	# Creation of the log file for user dev
 	touch /var/log/devSsh.log
 	chown dev:dev /var/log/devSsh.log
 
@@ -2222,9 +2229,9 @@ Cleanning()
 	reboot
 }
 
-#######################
+###################################
 ###   Beginning of the script   ###
-#######################
+###################################
 
 Update_sys
 Install_dependency
@@ -2236,7 +2243,7 @@ $DIALOG --clear --backtitle "Installation du site web de Cairn Devices" --title 
 --menu "Bonjour, choisissez votre type d'installation :" 15 80 5 \
 "Dédié" "Installation dédié" \
 "Serveur mail" "Installation du serveur mail" \
-"Mode dev" "Mode développeur" 2> $FICHTMP
+"Mode dev" "Mode développeur" 2> $FICHTMP # TODO Mettre tout le dialog en anglais
 valret=$?
 choix=`cat $FICHTMP`
 case $valret in
@@ -2338,3 +2345,4 @@ then
 	Dev_utils
 	Cleanning
 fi
+# IDEA Ajouter un mot personnalisé ou l'on choisi tout les madules à installer Attention aux dépendances entre eux
