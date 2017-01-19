@@ -156,7 +156,7 @@ Install_mail_server()
 	echo "# Containment of postfixadmin" >> /etc/apache2/sites-available/postfixadmin.conf
 	echo "php_admin_value open_basedir /var/www/postfixadmin/" >> /etc/apache2/sites-available/postfixadmin.conf
 	echo "# Prohibit access to files starting with a dot" >> /etc/apache2/sites-available/postfixadmin.conf
-	echo "<FilesMatch "^\\.">" >> /etc/apache2/sites-available/postfixadmin.conf
+	echo "<FilesMatch ^\\.>" >> /etc/apache2/sites-available/postfixadmin.conf
 	echo "    Order allow,deny" >> /etc/apache2/sites-available/postfixadmin.conf
 	echo "    Deny from all" >> /etc/apache2/sites-available/postfixadmin.conf
 	echo "</FilesMatch>" >> /etc/apache2/sites-available/postfixadmin.conf
@@ -175,11 +175,11 @@ Install_mail_server()
 
 	sed -i "1 s/<?php/<?php\nif (\!isset(\$_SERVER[\"HTTP_HOST\"]))\n{\n    parse_str(\$argv[1], \$_POST);\n}\n\$_SERVER[\'REQUEST_METHOD \']=\'POST\';\n\$_SERVER[\'HTTP_HOST\']=\'$domainName\';/g" /var/www/postfixadmin/setup.php
 
-	cd /var/www/postfixadmin/
+	cd /var/www/postfixadmin/ || { echo "FATAL ERROR : cd command fail to go to /var/www/postfixadmin/"; exit 1; }
 
 	php -f /var/www/postfixadmin/setup.php "form=createadmin&setup_password=$adminPass&username=admin@$domainName&password=$adminPass&password2=$adminPass" >> /dev/null
 
-	cd ~
+	cd ~ || { echo "FATAL ERROR : cd command fail to go to ~"; exit 1; }
 
 	sed -i "2,7d " /var/www/postfixadmin/setup.php
 
@@ -417,10 +417,10 @@ Install_mail_server()
 	echo "#" >> /etc/postfix/master.cf
 	echo "# ====================================================================" >> /etc/postfix/master.cf
 	echo "#" >> /etc/postfix/master.cf
-	echo "# Recent Cyrus versions can use the existing "lmtp" master.cf entry." >> /etc/postfix/master.cf
+	echo "# Recent Cyrus versions can use the existing \"lmtp\" master.cf entry." >> /etc/postfix/master.cf
 	echo "#" >> /etc/postfix/master.cf
 	echo "# Specify in cyrus.conf:" >> /etc/postfix/master.cf
-	echo "#   lmtp    cmd="lmtpd -a" listen="localhost:lmtp" proto=tcp4" >> /etc/postfix/master.cf
+	echo "#   lmtp    cmd=\"lmtpd -a\" listen=\"localhost:lmtp\" proto=tcp4" >> /etc/postfix/master.cf
 	echo "#" >> /etc/postfix/master.cf
 	echo "# Specify in main.cf one or more of the following:" >> /etc/postfix/master.cf
 	echo "#  mailbox_transport = lmtp:inet:localhost" >> /etc/postfix/master.cf
@@ -454,7 +454,7 @@ Install_mail_server()
 	echo "bsmtp     unix  -       n       n       -       -       pipe" >> /etc/postfix/master.cf
 	echo "  flags=Fq. user=bsmtp argv=/usr/lib/bsmtp/bsmtp -t\$nexthop -f\$sender \$recipient" >> /etc/postfix/master.cf
 	echo "scalemail-backend unix  -       n       n       -       2       pipe" >> /etc/postfix/master.cf
-	echo "  flags=R user=scalemail argv=/usr/lib/scalemail/bin/scalemail-store \${nexthop} \${user} ${extension}" >> /etc/postfix/master.cf
+	echo "  flags=R user=scalemail argv=/usr/lib/scalemail/bin/scalemail-store \${nexthop} \${user} \${extension}" >> /etc/postfix/master.cf
 	echo "mailman   unix  -       n       n       -       -       pipe" >> /etc/postfix/master.cf
 	echo "  flags=FR user=list argv=/usr/lib/mailman/bin/postfix-to-mailman.py" >> /etc/postfix/master.cf
 	echo "  \${nexthop} \${user}" >> /etc/postfix/master.cf
@@ -1099,7 +1099,7 @@ Install_Rainloop()
 	echo '[version]' >> /var/www/rainloop/data/_data_/_default_/configs/application.ini
 	echo 'current = "1.10.4.183"' >> /var/www/rainloop/data/_data_/_default_/configs/application.ini
 	theDate=$(date)
-	echo "saved = \"$thedate\"" >> /var/www/rainloop/data/_data_/_default_/configs/application.ini
+	echo "saved = \"$theDate\"" >> /var/www/rainloop/data/_data_/_default_/configs/application.ini
 
 	# Installation of Rainloop
 	wget http://repository.rainloop.net/v2/webmail/rainloop-community-latest.zip
@@ -1107,11 +1107,11 @@ Install_Rainloop()
 	rm -rf rainloop-community-latest.zip
 	mkdir /var/www/rainloop/logs/
 
-	cd /var/www/rainloop
+	cd /var/www/rainloop || { echo "FATAL ERROR : cd command fail to go to /var/www/rainloop"; exit 1; }
 	find . -type d -exec chmod 755 {} \;
 	find . -type f -exec chmod 644 {} \;
 	chown -R www-data:www-data .
-	cd ~
+	cd ~ || { echo "FATAL ERROR : cd command fail to go to ~"; exit 1; }
 
 	# Create database
 	mysql -u root -p${adminPass} -e "CREATE DATABASE rainloop;"
@@ -1130,7 +1130,7 @@ Install_Rainloop()
 	echo "# Containment of rainloop" >> /etc/apache2/sites-available/rainloop.conf
 	echo "php_admin_value open_basedir /var/www/rainloop/" >> /etc/apache2/sites-available/rainloop.conf
 	echo "# Prohibit access to files starting with a dot" >> /etc/apache2/sites-available/rainloop.conf
-	echo "<FilesMatch "^\\.">" >> /etc/apache2/sites-available/rainloop.conf
+	echo "<FilesMatch ^\\.>" >> /etc/apache2/sites-available/rainloop.conf
 	echo "    Order allow,deny" >> /etc/apache2/sites-available/rainloop.conf
 	echo "    Deny from all" >> /etc/apache2/sites-available/rainloop.conf
 	echo "</FilesMatch>" >> /etc/apache2/sites-available/rainloop.conf
@@ -1159,11 +1159,11 @@ Install_Rainloop()
 
 	rm changeAdminPasswd.php
 
-	cd /var/www/rainloop
+	cd /var/www/rainloop || { echo "FATAL ERROR : cd command fail to go to /var/www/rainloop"; exit 1; }
 	find . -type d -exec chmod 755 {} \;
 	find . -type f -exec chmod 644 {} \;
 	chown -R www-data:www-data .
-	cd ~
+	cd ~ || { echo "FATAL ERROR : cd command fail to go to ~"; exit 1; }
 
 	systemctl restart apache2
 }
@@ -1227,7 +1227,7 @@ Install_WebsiteCD()
 	echo "# Containment of CairnDevices website (+phpmyadmin)" >> /etc/apache2/sites-available/CairnDevices.conf
 	echo "php_admin_value open_basedir /var/www/CairnDevices/:/usr/share/phpmyadmin/:/etc/phpmyadmin/:/var/lib/phpmyadmin/:/usr/share/php/php-gettext/:/usr/share/javascript/:/usr/share/php/tcpdf/:/usr/share/doc/phpmyadmin/:/usr/share/php/phpseclib/" >> /etc/apache2/sites-available/CairnDevices.conf
 	echo "# Prohibit access to files starting with a dot" >> /etc/apache2/sites-available/CairnDevices.conf
-	echo "<FilesMatch "^\\.">" >> /etc/apache2/sites-available/CairnDevices.conf
+	echo "<FilesMatch ^\\.>" >> /etc/apache2/sites-available/CairnDevices.conf
 	echo "    Order allow,deny" >> /etc/apache2/sites-available/CairnDevices.conf
 	echo "    Deny from all" >> /etc/apache2/sites-available/CairnDevices.conf
 	echo "</FilesMatch>" >> /etc/apache2/sites-available/CairnDevices.conf
@@ -1365,14 +1365,14 @@ Security_app()
 
 	Install_SNORT() # TODO Installation de SNORT
 	{
-		interface=$(route | grep default | awk '{print $8}')
+		#interface=$(route | grep default | awk '{print $8}')
 
 		apt install snort
 		# Change SSH port in /etc/snort/snort.conf
 
 		git clone git://github.com/firnsy/barnyard2.git
 
-		cd barnyard2/
+		#cd barnyard2/
 
 		autoreconf -fvi -I ./m4
 
@@ -1428,10 +1428,14 @@ Security_app()
 
 		ln -s /usr/share/modsecurity-crs/modsecurity_crs_10_setup.conf /usr/share/modsecurity-crs/activated_rules/modsecurity_crs_10_setup.conf
 
-		for f in `ls /usr/share/modsecurity-crs/base_rules`
+		cd /usr/share/modsecurity-crs/base_rules/ || { echo "FATAL ERROR : cd command fail to go to /usr/share/modsecurity-crs/base_rules/"; exit 1; }
+
+		for f in *
 		do
 			ln -s /usr/share/modsecurity-crs/base_rules/$f /usr/share/modsecurity-crs/activated_rules/$f
 		done
+
+		cd ~  || { echo "FATAL ERROR : cd command fail to go to ~"; exit 1; }
 
 		# rm /usr/share/modsecurity-crs/activated_rules/modsecurity_crs_21_protocol_anomalies.conf
 
@@ -1702,7 +1706,10 @@ Security_app()
 		systemctl restart apache2
 
 		# Remove blacklist ip
-		0 5 * * * find /var/lock/mod_evasive -mtime +1 -type f -exec rm -f '{}' \; # FIXME A mettre dans la crontab
+		crontab -l > /tmp/crontab.tmp
+		echo "0 5 * * * find /var/lock/mod_evasive -mtime +1 -type f -exec rm -f '{}' \;" >> /tmp/crontab.tmp
+		crontab /tmp/crontab.tmp
+		rm /tmp/crontab.tmp
 
 		echo "net.ipv4.conf.all.send_redirects = 0" >> /etc/sysctl.conf
 		echo "net.ipv4.conf.all.accept_source_route = 0" >> /etc/sysctl.conf
@@ -1756,7 +1763,7 @@ Security_app()
 		echo "# Containment of esmweb" >> /etc/apache2/sites-available/esmweb.conf
 		echo "php_admin_value open_basedir /var/www/esmweb/" >> /etc/apache2/sites-available/esmweb.conf
 		echo "# Prohibit access to files starting with a dot" >> /etc/apache2/sites-available/esmweb.conf
-		echo "<FilesMatch "^\\.">" >> /etc/apache2/sites-available/esmweb.conf
+		echo "<FilesMatch ^\\.>" >> /etc/apache2/sites-available/esmweb.conf
 		echo "    Order allow,deny" >> /etc/apache2/sites-available/esmweb.conf
 		echo "    Deny from all" >> /etc/apache2/sites-available/esmweb.conf
 		echo "</FilesMatch>" >> /etc/apache2/sites-available/esmweb.conf
@@ -2055,7 +2062,7 @@ ItsCert()
 		apt-get -y install openssl
 
 		# Creation of private key
-		cd /etc/ssl/
+		cd /etc/ssl/ || { echo "FATAL ERROR : cd command fail to go to /etc/ssl/"; exit 1; }
 		openssl genrsa -out mailserver.key 4096
 
 		# Ask for certificate signature
@@ -2063,7 +2070,7 @@ ItsCert()
 
 		# Create certificate
 		openssl x509 -req -days 365 -in mailserver.csr -signkey mailserver.key -out mailserver.crt
-		cd ~
+		cd ~ || { echo "FATAL ERROR : cd command fail to go to ~"; exit 1; }
 
 		# Put certificate in conf file
 		sed -i "s/\/etc\/letsencrypt\/live\/$domainName\/cert.pem/\/etc\/ssl\/mailserver.crt/g" /etc/postfix/main.cf
@@ -2092,14 +2099,15 @@ ItsCert()
 Dev_utils()
 {
 	mkdir Depots
-	cd Depots
+	cd Depots || { echo "FATAL ERROR : cd command fail to go to Depots"; exit 1; }
 
 	git clone https://github.com/Gspohu/WebSiteCD.git
 
-	cd ~
+	cd ~ || { echo "FATAL ERROR : cd command fail to go to ~"; exit 1; }
 
 	echo "#!/bin/bash" >>  /usr/bin/updateCG
-	echo "rsync -a --exclude=\"Repository\" --exclude='logs' --exclude='WebsiteCD-install.sh' --exclude='SQL' --exclude='js/piwik.js' /home/$mainUser/Depots/WebSiteCD/ /var/www/CairnDevices/" >>  /usr/bin/updateCG
+	echo "rsync -a --exclude=\"Repository\" --exclude='logs' --exclude='WebsiteCD-install.sh' --exclude='SQL' --exclude='js/piwik.js' /home/$mainUser/Depots/WebSiteCD/ /var/www/CairnDevices/ || { echo 'FATAL ERROR in rsync action'; exit 1; }" >>  /usr/bin/updateCG
+	echo "chown -R www-data:www-data /var/www/CairnDevices/ || { echo 'FATAL ERROR in chown action'; exit 1; }" >>  /usr/bin/updateCG
 	echo 'echo "Update Success !"' >> /usr/bin/updateCG
 
 	chmod +x  /usr/bin/updateCG
@@ -2130,8 +2138,6 @@ Dev_utils()
 	dialog --backtitle "Installation du site web de Cairn devices" --title "Password for dev user" \
 	--ok-label "Next" --msgbox "In order to use remote sync use dev user with this password :
 	Your Admin password" 7 70
-
-	devPass="0"
 
 	# TODO Expliquer comment utiliser le mode DEV
 
@@ -2167,7 +2173,7 @@ Install_Piwik()
 	echo "# Containment of piwik" >> /etc/apache2/sites-available/piwik.conf
 	echo "php_admin_value open_basedir /var/www/piwik/" >> /etc/apache2/sites-available/piwik.conf
 	echo "# Prohibit access to files starting with a dot" >> /etc/apache2/sites-available/piwik.conf
-	echo "<FilesMatch "^\\.">" >> /etc/apache2/sites-available/piwik.conf
+	echo "<FilesMatch ^\\.>" >> /etc/apache2/sites-available/piwik.conf
 	echo "    Order allow,deny" >> /etc/apache2/sites-available/piwik.conf
 	echo "    Deny from all" >> /etc/apache2/sites-available/piwik.conf
 	echo "</FilesMatch>" >> /etc/apache2/sites-available/piwik.conf

@@ -235,11 +235,6 @@ h4
 	color: #fff;
 }
 
-a
-{
-	color: #e66e0d;
-}
-
 p a
 {
 	-webkit-transition: all 0.3s ease-in-out;

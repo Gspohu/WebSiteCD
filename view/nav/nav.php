@@ -10,11 +10,11 @@
 
 		<div id="menu">
 			<ul>
-				<li><a href="index.html" class="active">Home</a></li> # TODO Revoir les liens vers page PHP
-				<li><a href="product.html">Products</a></li>
-				<li><a href="about.html">Our team</a></li>
-				<li><a href="https://cairngit.eu/beta">CairnGit</a></li>
 				<li><a href="blog.html">Blog</a></li>
+				<li><a href="https://cairngit.eu/beta">CairnGit</a></li>
+				<li><a href="about.html">Our team</a></li>
+				<li><a href="product.html">Products</a></li>
+				<li><a href="index.html" class="active">Home</a></li> <!-- TODO Revoir les liens vers page PHP -->
 			</ul>
 		</div>
 
