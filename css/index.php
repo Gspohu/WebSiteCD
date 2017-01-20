@@ -16,9 +16,18 @@ include_once('nav.php');
 {
 	width: 100%;
 	height: 465px;
-	background: url('img/main_img_1.jpg') scroll no-repeat center; /* FIXME Trouver une image sur le site http://finda.photo/ et https://www.pexels.com/ pour le fond */
-	background-color: #000;
-	border-bottom: 7px solid #e5e5e5;
+	background-color: rgba(0, 0, 0, 0.1);
+}
+
+.imgBackground
+{
+	position: absolute;
+	z-index: -1;
+	top: 0;
+	width: 100%;
+	height: 540px;
+	background: url('/images/main_img_1.jpg') scroll no-repeat center;
+	background-color: rgb(20, 20, 20);
 }
 
 #main_part_in, #main_part_inner_in
@@ -35,7 +44,7 @@ include_once('nav.php');
 	font-weight: 200;
 	text-align: center;
 	color: #fff;
-	text-shadow: 0px 1px #000;
+	text-shadow: 1px 1px 3px rgb(0, 0, 0);
 }
 
 #main_part_in p
@@ -103,41 +112,37 @@ include_once('nav.php');
 	top: 30px;
 }
 
-a.button_dark, a.button_light
+a.button_dark
 {
 	background-color: #0d6ae6;
 	display: block;
 	width: 90px;
-	padding: 15px 30px 0 30px;
-	height: 33px;
+	padding: 20px 30px 20px 30px;
 	text-align: center;
 	margin: auto;
 	z-index: 2;
 	position: relative;
 	color: #fff;
-	font-size: 11pt;
+	font-size: 18px;
 	font-weight: 400;
 	text-decoration: none;
-	letter-spacing: 1px;
 	text-shadow: 0px 1px #0553d7;
-	border: 5px solid rgba(0, 0, 0, .2);
 	background-clip: padding-box;
-	box-shadow: inset 0px 1px #1479f0;
-
-	-webkit-transition: all 0.2s ease-in-out;
-	-moz-transition: all 0.2s ease-in-out;
-	-o-transition: all 0.2s ease-in-out;
-	-ms-transition: all 0.2s ease-in-out;
-	transition: all 0.2s ease-in-out;
 }
 
-a:hover.button_dark, a:hover._button_light
+a:hover.button_dark
 {
 	background-color: #036bd7;
-	text-shadow: 0px -1px #0016a7;
-	border: 5px solid rgba(0, 0, 0, .4);
-	background-clip: padding-box;
-	box-shadow: inset 0px 1px 2px #003cc1;
+}
+
+@media all and (max-width: 1000px)
+{
+	#main_part, #main_part_inner
+	{
+		width: 100%;
+		height: 400px;
+		background-color: rgba(0, 0, 0, 0.1);
+	}
 }
 
 <?php

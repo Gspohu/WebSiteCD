@@ -1,9 +1,3 @@
-<?php
-header('content-type: text/css');
-header('Cache-Control: max-age=31536000, must-revalidate');
-?>
-
-
 #footer {
 	width: 100%;
 	height: 182px;

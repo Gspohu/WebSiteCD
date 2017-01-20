@@ -1,4 +1,5 @@
 <div id="main_part">
+	<div class="imgBackground"></div>
 	<div id="main_part_in">
 
 		<h2>Free your computer</h2>

@@ -1362,7 +1362,7 @@ Security_app()
 
 		echo "#!/bin/bash" > /home/$mainUser/.securityScript/lynis.sh
 		echo "apt update" >> /home/$mainUser/.securityScript/lynis.sh
-		echo "apt install chkrootkit" >> /home/$mainUser/.securityScript/lynis.sh
+		echo "apt install lynis" >> /home/$mainUser/.securityScript/lynis.sh
 		echo "/usr/sbin/lynis --check-all --cronjob -Q | /usr/bin/mail -s \"Lynis on $hostname\" $email" >> /home/$mainUser/.securityScript/lynis.sh
 
 		# Crontab rules for anti rootkit
