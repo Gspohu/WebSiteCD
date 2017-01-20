@@ -43,8 +43,6 @@
 
 /* ----- Menu ----- */
 
-/* TODO Adapt the size of the menu with percent */
-
 #menu
 {
 	position: absolute;

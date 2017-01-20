@@ -1347,17 +1347,31 @@ Security_app()
 		apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C80E383C3DE9F082E01391A0366C67DE91CA5D5F
 		echo "deb https://packages.cisofy.com/community/lynis/deb/ xenial main" > /etc/apt/sources.list.d/cisofy-lynis.list
 
+		# Create script
+		mkdir /home/$mainUser/.securityScript
+		echo "#!/bin/bash" > /home/$mainUser/.securityScript/rkhunter.sh
+		echo "apt update" >> /home/$mainUser/.securityScript/rkhunter.sh
+		echo "apt install rkhunter" >> /home/$mainUser/.securityScript/rkhunter.sh
+		echo "rkhunter --update" >> /home/$mainUser/.securityScript/rkhunter.sh
+		echo "/usr/bin/rkhunter --checkall --nocolors --skip-keypress | /usr/bin/mail -s \"Rkhunter on $hostname\" $email" >> /home/$mainUser/.securityScript/rkhunter.sh
+
+		echo "#!/bin/bash" > /home/$mainUser/.securityScript/chkrootkit.sh
+		echo "apt update" >> /home/$mainUser/.securityScript/chkrootkit.sh
+		echo "apt install chkrootkit" >> /home/$mainUser/.securityScript/chkrootkit.sh
+		echo "/usr/sbin/chkrootkit | /usr/bin/mail -s \"ChkRootkit on $hostname\" $email" >> /home/$mainUser/.securityScript/chkrootkit.sh
+
+		echo "#!/bin/bash" > /home/$mainUser/.securityScript/lynis.sh
+		echo "apt update" >> /home/$mainUser/.securityScript/lynis.sh
+		echo "apt install chkrootkit" >> /home/$mainUser/.securityScript/lynis.sh
+		echo "/usr/sbin/lynis --check-all --cronjob -Q | /usr/bin/mail -s \"Lynis on $hostname\" $email" >> /home/$mainUser/.securityScript/lynis.sh
+
 		# Crontab rules for anti rootkit
 		crontab -l > /tmp/crontab.tmp
-		echo "0 0 * * 0 root apt update" >> /tmp/crontab.tmp
-		echo "10 0 * * 0 root rkhunter --update" >> /tmp/crontab.tmp
-		echo "0 1 * * 0 root rkhunter --checkall --nocolors --skip-keypress | mail -s \"RkHunter on $hostname\" $email" >> /tmp/crontab.tmp # BUG rkhunter send empty mail
+		echo "0 1 * * 0 /bin/bash /home/$mainUser/.securityScript/rkhunter.sh" >> /tmp/crontab.tmp
 
-		echo "0 2 1 * * root apt install chkrootkit" >> /tmp/crontab.tmp
-		echo "10 2 * * 0 root chkrootkit | mail -s \"ChkRootkit on $hostname\" $email" >> /tmp/crontab.tmp # BUG Chkrootkit send empty mail
+		echo "0 2 * * 0 /bin/bash /home/$mainUser/.securityScript/chkrootkit.sh" >> /tmp/crontab.tmp
 
-		echo "0 3 1 * * root apt install lynis" >> /tmp/crontab.tmp
-		echo "10 3 1 * * root lynis --check-all --cronjob -Q | mail -s \"Lynis on $hostname\" $email" >> /tmp/crontab.tmp # BUG Lynis doesn't send mail
+		echo "0 3 * * 0 /bin/bash /home/$mainUser/.securityScript/lynis.sh" >> /tmp/crontab.tmp
 
 		crontab /tmp/crontab.tmp
 		rm /tmp/crontab.tmp
