@@ -24,7 +24,6 @@
 {
 	width: auto;
 	height: 65px;
-	margin-top: 5px;
 	margin-left: 30px;
 	float: left;
 }
@@ -78,7 +77,8 @@
 	background-color: rgba(0, 0, 0, 0.1);
 }
 
-.navIcon
+.navIcon,
+.navIconClose
 {
 	display: none;
 }
@@ -96,6 +96,7 @@
 		align-items: center;
 		height: 140px;
 		background-color: rgba(42, 42, 42, 0.8);
+		z-index: 3;
 	}
 
 	.titleLogoName
@@ -108,16 +109,19 @@
 	.titleLogoName img
 	{
 		width: auto;
-		height: 100px;
+		height: 120px;
+		margin-left: 0;
 	}
 
-	.navIcon
+	a.navIcon
 	{
 		display: block;
 		float: right;
 		margin-right: 30px;
-		font-size: 60px;
+		font-size: 70px;
 		color: rgb(240, 240, 240);
+		text-decoration: none;
+		cursor: pointer;
 	}
 
 	.companyName
@@ -133,6 +137,89 @@
 	#menu
 	{
 		display: none;
+	}
+
+	#navIconClose
+	{
+		display: none;
+	}
+
+	#header:target
+	{
+		position: fixed;
+	}
+
+	#header:target #menu
+	{
+		display: block;
+		position: fixed;
+		top: 140px;
+		left: 0;
+		width: 100%;
+		height: 100%;
+	}
+
+	#header:target #menu ul
+	{
+		display: flex;
+		flex-direction: column-reverse;
+		align-items: center;
+		justify-content: center;
+		height: calc(100% - 140px);
+		background-color: rgb(15, 15, 15);
+	}
+
+	#header:target #menu ul li
+	{
+		overflow: hidden;
+		text-align: center;
+		flex: 1;
+		width: 60%;
+		border-bottom: 1px solid rgb(35, 35, 35);
+	}
+
+	#header:target #menu ul li a
+	{
+		display: flex;
+		flex-direction: row;
+		justify-content: center;
+		align-items: center;
+		width: 100%;
+		text-decoration: none;
+		background-color: rgb(15, 15, 15);
+		color: rgb(210, 210, 210);
+		font-size: 5vh;
+		letter-spacing: 1px;
+		padding: 0;
+		height: 100%;
+	}
+
+	#header:target #menu ul li a:hover
+	{
+		color: rgb(120, 120, 120);
+		text-shadow: none;
+	}
+
+	#header:target #menu ul li a.active
+	{
+		color: rgb(120, 120, 120);
+		text-shadow: none;
+	}
+
+	#header:target a#navIcon
+	{
+		display: none;
+	}
+
+	#header:target a#navIconClose
+	{
+		display: block;
+		float: right;
+		margin-right: 30px;
+		font-size: 75px;
+		color: rgb(240, 240, 240);
+		text-decoration: none;
+		cursor: pointer;
 	}
 
 	#menu ul li a

@@ -26,13 +26,13 @@ include_once('nav.php');
 	top: 0;
 	width: 100%;
 	height: 540px;
-	background: url('/images/main_img_1.jpg') scroll no-repeat center;
+	background: url('/images/main_img_1.jpg') scroll no-repeat center; /* Diminuer la taille du backgruond pour la version mobile */
 	background-color: rgb(20, 20, 20);
 }
 
 #main_part_in, #main_part_inner_in
 {
-	width: 960px;
+	width: 100%;
 	margin: auto;
 }
 
@@ -51,9 +51,9 @@ include_once('nav.php');
 {
 	font-size: 150%;
 	font-weight: 300;
-	color: #bcbcbc;
+	color: rgb(230, 230, 230);
 	text-align: center;
-	text-shadow: 0px 1px #000;
+	text-shadow: 1px 1px 3px rgb(0, 0, 0);
 }
 
 #main_part .button_main
@@ -63,14 +63,14 @@ include_once('nav.php');
 
 #content
 {
-	width: 960px;
+	width: 100%;
 	margin: auto;
 	padding-top: 40px;
 }
 
 #content_inner
 {
-	width: 960px;
+	width: 100%;
 	margin: auto;
 	padding-top: 0;
 }
@@ -114,7 +114,7 @@ include_once('nav.php');
 
 a.button_dark
 {
-	background-color: #0d6ae6;
+	background-color: #1d5eb9;
 	display: block;
 	width: 90px;
 	padding: 20px 30px 20px 30px;
@@ -132,7 +132,7 @@ a.button_dark
 
 a:hover.button_dark
 {
-	background-color: #036bd7;
+	background-color: #1e63c3;
 }
 
 @media all and (max-width: 1000px)

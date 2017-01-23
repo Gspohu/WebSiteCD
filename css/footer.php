@@ -10,7 +10,7 @@
 }
 
 #footer_in {
-	width: 960px;
+	width: 100%;
 	margin: auto;
 	position: relative;
 	padding-top: 50px;

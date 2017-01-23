@@ -1,13 +1,14 @@
-<div class="header">
+<div id="header" class="header">
 
 	<h1 class="titleLogoName">
 		<a href="index">
-			<img src="images/logo.png" alt="Cairn Devices"/> <!-- Diminuer la taille du logo -->
+			<img src="images/logoDarkBackground.png" alt="Cairn Devices"/> <!-- Passer en SVG -->
 		</a>
 		<a class="companyName" href="index">Cairn Devices</a>
 	</h1>
 
-	<div class="navIcon"> &#9776; </div>
+	<a class="navIcon" id="navIcon" href="#header"> &#9776; </a>
+	<a class="navIconClose" id="navIconClose" href="#"> &#10005; </a>
 
 	<div id="menu">
 		<ul>
@@ -18,5 +19,5 @@
 			<li><a href="index" class="active">Home</a></li>
 		</ul>
 	</div>
-	
+
 </div>
