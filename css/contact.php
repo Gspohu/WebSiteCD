@@ -11,7 +11,7 @@ include_once('style.php');
 
 include_once('nav.php');
 ?>
-# TODO Add HTML file in view/body for contact
+
 form.formit
 {
 	margin-left: 10px;

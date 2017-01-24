@@ -87,7 +87,6 @@
 
 @media all and (max-width: 1000px)
 {
-	/* TODO mutiplier par deux la hauteur de la bar de nav centrer le logo virer le nom CD mettre un boutton trois bars sur le coté gauche et afficher au clic le nav en fixed */
 
 	.header
 	{

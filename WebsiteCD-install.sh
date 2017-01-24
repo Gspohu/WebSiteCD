@@ -2365,4 +2365,4 @@ then
 	Dev_utils
 	Cleanning
 fi
-# IDEA Ajouter un mot personnalisé ou l'on choisi tout les madules à installer Attention aux dépendances entre eux
+# IDEA Ajouter un mode personnalisé ou l'on choisi tout les modules à installer Attention aux dépendances entre eux

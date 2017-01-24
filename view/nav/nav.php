@@ -16,7 +16,7 @@
 			<li><a href="https://cairngit.eu/beta">CairnGit</a></li>
 			<li><a href="about">Our team</a></li>
 			<li><a href="product">Products</a></li>
-			<li><a href="index" class="active">Home</a></li>
+			<li><a href="index" class="active">Home</a></li><!-- TODO mettre le active du nav en variable php -->
 		</ul>
 	</div>
 
