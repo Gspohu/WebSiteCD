@@ -1275,11 +1275,53 @@ Install_WebsiteCD()
 	sleep 4
 }
 
+Install_Serge()
+{
+	# Download Serge
+	wget https://github.com/ABHC/SERGE/archive/web-interface.zip # HACK je suis sur la branche webUI attention
+	mkdir /var/www/Serge/
+	unzip master.zip -d /var/www/Serge/
+	rsync -a /var/www/Serge/SERGE-web-interface/ /var/www/Serge/
+	chmod -R 777 /var/www/Serge
+	rm web-interface.zip
+	rm -r /var/www/Serge/SERGE-web-interface/
+
+	# Configuration apache
+	echo "<VirtualHost *:80>" > /etc/apache2/sites-available/Serge.conf
+	echo "ServerAdmin postmaster@$domainName" >> /etc/apache2/sites-available/Serge.conf
+	echo "ServerName  $domainName/serge" >> /etc/apache2/sites-available/Serge.conf
+	echo "ServerAlias  serge.$domainName" >> /etc/apache2/sites-available/Serge.conf
+	echo "DocumentRoot /var/www/Serge/web/" >> /etc/apache2/sites-available/Serge.conf
+	echo "# Pass the default character set" >> /etc/apache2/sites-available/Serge.conf
+	echo "AddDefaultCharset utf-8" >> /etc/apache2/sites-available/Serge.conf
+	echo "# Containment of Serge webUI" >> /etc/apache2/sites-available/Serge.conf
+	echo "php_admin_value open_basedir /var/www/Serge/web" >> /etc/apache2/sites-available/Serge.conf
+	echo "# Prohibit access to files starting with a dot" >> /etc/apache2/sites-available/Serge.conf
+	echo "<FilesMatch ^\\.>" >> /etc/apache2/sites-available/Serge.conf
+	echo "    Order allow,deny" >> /etc/apache2/sites-available/Serge.conf
+	echo "    Deny from all" >> /etc/apache2/sites-available/Serge.conf
+	echo "</FilesMatch>" >> /etc/apache2/sites-available/Serge.conf
+	echo "<Directory /var/www/Serge/web/>" >> /etc/apache2/sites-available/Serge.conf
+	echo "Options Indexes FollowSymLinks" >> /etc/apache2/sites-available/Serge.conf
+	echo "AllowOverride all" >> /etc/apache2/sites-available/Serge.conf
+	echo "Order allow,deny" >> /etc/apache2/sites-available/Serge.conf
+	echo "allow from all" >> /etc/apache2/sites-available/Serge.conf
+	echo "</Directory>" >> /etc/apache2/sites-available/Serge.conf
+	echo "ErrorLog /var/www/Serge/web/logs/error.log" >> /etc/apache2/sites-available/Serge.conf
+	echo "CustomLog /var/www/Serge/web/logs/access.log combined" >> /etc/apache2/sites-available/Serge.conf
+	echo "</VirtualHost>" >> /etc/apache2/sites-available/Serge.conf
+
+	chown -R www-data:www-data /var/www/Serge/web/
+
+	a2ensite Serge
+	systemctl restart apache2
+}
+
 Security_app()
 {
 	# TODO Utilité de UFW ?
 	# Enabled UFW
-	#  ufw enable
+	# ufw enable
 
 	Mail_adress()
 	{
@@ -2116,12 +2158,15 @@ Dev_utils()
 	cd Depots || { echo "FATAL ERROR : cd command fail to go to Depots"; exit 1; }
 
 	git clone https://github.com/Gspohu/WebSiteCD.git
+	git clone https://github.com/ABHC/SERGE.git
 
 	cd ~ || { echo "FATAL ERROR : cd command fail to go to ~"; exit 1; }
 
 	echo "#!/bin/bash" >>  /usr/bin/updateCG
-	echo "rsync -a --exclude=\"Repository\" --exclude='logs' --exclude='WebsiteCD-install.sh' --exclude='SQL' --exclude='js/piwik.js' /home/$mainUser/Depots/WebSiteCD/ /var/www/CairnDevices/ || { echo 'FATAL ERROR in rsync action'; exit 1; }" >>  /usr/bin/updateCG
-	echo "chown -R www-data:www-data /var/www/CairnDevices/ || { echo 'FATAL ERROR in chown action'; exit 1; }" >>  /usr/bin/updateCG
+	echo "rsync -a --exclude=\"Repository\" --exclude='logs' --exclude='WebsiteCD-install.sh' --exclude='SQL' --exclude='js/piwik.js' /home/$mainUser/Depots/WebSiteCD/ /var/www/CairnDevices/ || { echo 'FATAL ERROR in rsync action for /home/$mainUser/Depots/WebSiteCD/'; exit 1; }" >>  /usr/bin/updateCG
+	echo "rsync -a --exclude='logs' /home/$mainUser/Depots/SERGE/ /var/www/Serge/web/ || { echo 'FATAL ERROR in rsync action for /home/$mainUser/Depots/SERGE/'; exit 1; }" >>  /usr/bin/updateCG
+	echo "chown -R www-data:www-data /var/www/CairnDevices/ || { echo 'FATAL ERROR in chown action for /var/www/CairnDevices/'; exit 1; }" >>  /usr/bin/updateCG
+	echo "chown -R www-data:www-data /var/www/Serge/web/ || { echo 'FATAL ERROR in chown action for /var/www/Serge/web/'; exit 1; }" >>  /usr/bin/updateCG
 	echo 'echo "Update Success !"' >> /usr/bin/updateCG
 
 	chmod +x  /usr/bin/updateCG
