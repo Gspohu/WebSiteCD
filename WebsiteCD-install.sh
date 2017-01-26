@@ -2307,6 +2307,7 @@ then
 	Install_Rainloop
 	Install_Postgrey
 	Install_WebsiteCD
+	Install_Serge
 	Install_Piwik
 	Security_app
 	ItsCert
@@ -2332,6 +2333,7 @@ then
 	Install_Rainloop
 	Install_Postgrey
 	Install_WebsiteCD
+	Install_Serge
 	Install_Piwik
 	Security_app
 	ItsCert
