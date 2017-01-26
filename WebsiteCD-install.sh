@@ -2160,6 +2160,25 @@ Dev_utils()
 	git clone https://github.com/Gspohu/WebSiteCD.git
 	git clone https://github.com/ABHC/SERGE.git
 
+	gitemail=""
+	# Ask for email adresse for git
+	while [ "$gitemail" == "" ]
+	do
+		dialog --backtitle "Cairngit installation" --title "Email for git"\
+		--inputbox "    /!\\ This email will be use in your commits /!\\" 7 60 2> $FICHTMP
+		gitemail=`cat $FICHTMP`
+	done
+	gitname=""
+	# Ask for git name
+	while [ "$gitname" == "" ]
+	do
+		dialog --backtitle "Cairngit installation" --title "Name for git"\
+		--inputbox "    /!\\ This name will be use in your commits /!\\" 7 60 2> $FICHTMP
+		gitname=`cat $FICHTMP`
+	done
+	git config --global user.email "$gitemail"
+	git config --global user.name "$gitname"
+
 	cd ~ || { echo "FATAL ERROR : cd command fail to go to ~"; exit 1; }
 
 	echo "#!/bin/bash" >>  /usr/bin/updateCG
