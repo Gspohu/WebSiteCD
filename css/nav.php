@@ -1,83 +1,228 @@
-<?php
-        header('content-type: text/css');
-        header('Cache-Control: max-age=31536000, must-revalidate');
-?>
-
-
-#header {
-    width: 100%;
-    height: 75px;
-    background-color: #fff;
-}
-
-#header_in {
-    width: 960px;
-    padding-left: 10px;
-    height: 75px;
-    margin: auto;
-    position: relative;
+.header
+{
+	display: flex;
+	justify-content: center;
+	align-items: flex-start;
+	width: 100%;
+	height: 75px;
 }
 
 .titleLogoName
 {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 15pt;
-    letter-spacing: 1px;
-    float: left;
+	display: flex;
+	height: 100%;
+	justify-content: flex-start;
+	align-items: center;
+	font-size: 15pt;
+	letter-spacing: 1px;
+	float: left;
+	background-color: rgba(42, 42, 42, 0.8);
+	flex: 1;
 }
 
 .titleLogoName img
 {
 	width: auto;
 	height: 65px;
-	margin-top: 5px;
+	margin-left: 30px;
 	float: left;
 }
 
 .titleLogoName a
 {
-    text-decoration: none;
-    color: #111;
-    font-weight: 100;
-    margin-left: 15px;
+	text-decoration: none;
+	color: rgb(240, 240, 240);
+	font-size: 20px;
+	font-weight: normal;
+	margin-left: 5px;
 }
 
-    /* ----- Menu ----- */
-    
-    #menu {
-	position: absolute;
-	right: 00px;
+/* ----- Menu ----- */
+
+#menu
+{
 	font-size: 95%;
-	background: url('img/menu_cut.jpg') no-repeat scroll right;
-	margin-right: 0px;
-    }
-    
-    
-    #menu ul li {
-	float: left;
+}
+
+#menu ul li
+{
+	float: right;
 	display: inline;
-    }
-    
-    #menu ul li a {
+	overflow: hidden;
+}
+
+#menu ul li a
+{
 	text-decoration: none;
-	color: #101115;
-	text-transform: uppercase;
-	font-weight: 300;
+	color: rgb(240, 240, 240);
+	font-size: 16px;
 	letter-spacing: 1px;
 	display: block;
-	padding: 29px 40px 0 40px;
-	height: 46px;
-	background-color: #fff;
-    }
-    
-    #menu ul li a:hover {
-	background-color: #f3f3f3;
-    }
-    
-    #menu ul li a.active {
-	background: none;
-	color: #fff;
-    }
-    
+	padding: 28px 30px 0;
+	height: 47px;
+	background-color: rgba(42, 42, 42, 0.8);
+}
+
+#menu ul li a:hover
+{
+	background-color: rgba(0, 0, 0, 0.1);
+	color: rgb(255, 255, 255);
+	text-shadow: 1px 1px 3px rgb(0, 0, 0);
+}
+
+#menu ul li a.active
+{
+	color: rgb(255, 255, 255);
+	text-shadow: 1px 1px 3px rgb(0, 0, 0);
+	background-color: rgba(0, 0, 0, 0.1);
+}
+
+.navIcon,
+.navIconClose
+{
+	display: none;
+}
+
+/* Style for mobile (>900px) */
+
+@media all and (max-width: 1000px)
+{
+
+	.header
+	{
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		height: 140px;
+		background-color: rgba(42, 42, 42, 0.8);
+		z-index: 3;
+	}
+
+	.titleLogoName
+	{
+		float: none;
+		justify-content: center;
+		background: none;
+	}
+
+	.titleLogoName img
+	{
+		width: auto;
+		height: 120px;
+		margin-left: 0;
+	}
+
+	a.navIcon
+	{
+		display: block;
+		float: right;
+		margin-right: 30px;
+		font-size: 70px;
+		color: rgb(240, 240, 240);
+		text-decoration: none;
+		cursor: pointer;
+	}
+
+	.companyName
+	{
+		display: none;
+	}
+
+	.titleLogoName a
+	{
+		font-size: 22px;
+	}
+
+	#menu
+	{
+		display: none;
+	}
+
+	#navIconClose
+	{
+		display: none;
+	}
+
+	#header:target
+	{
+		position: fixed;
+	}
+
+	#header:target #menu
+	{
+		display: block;
+		position: fixed;
+		top: 140px;
+		left: 0;
+		width: 100%;
+		height: 100%;
+	}
+
+	#header:target #menu ul
+	{
+		display: flex;
+		flex-direction: column-reverse;
+		align-items: center;
+		justify-content: center;
+		height: calc(100% - 140px);
+		background-color: rgb(15, 15, 15);
+	}
+
+	#header:target #menu ul li
+	{
+		overflow: hidden;
+		text-align: center;
+		flex: 1;
+		width: 60%;
+		border-bottom: 1px solid rgb(35, 35, 35);
+	}
+
+	#header:target #menu ul li a
+	{
+		display: flex;
+		flex-direction: row;
+		justify-content: center;
+		align-items: center;
+		width: 100%;
+		text-decoration: none;
+		background-color: rgb(15, 15, 15);
+		color: rgb(210, 210, 210);
+		font-size: 5vh;
+		letter-spacing: 1px;
+		padding: 0;
+		height: 100%;
+	}
+
+	#header:target #menu ul li a:hover
+	{
+		color: rgb(120, 120, 120);
+		text-shadow: none;
+	}
+
+	#header:target #menu ul li a.active
+	{
+		color: rgb(120, 120, 120);
+		text-shadow: none;
+	}
+
+	#header:target a#navIcon
+	{
+		display: none;
+	}
+
+	#header:target a#navIconClose
+	{
+		display: block;
+		float: right;
+		margin-right: 30px;
+		font-size: 75px;
+		color: rgb(240, 240, 240);
+		text-decoration: none;
+		cursor: pointer;
+	}
+
+	#menu ul li a
+	{
+		font-size: 18px;
+	}
+}

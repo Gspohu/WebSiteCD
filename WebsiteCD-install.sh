@@ -7,9 +7,9 @@ exec 2> >(tee -a error.log)
 itscert="no"
 sshport="22"
 
-#####################
+###############################
 ###   Function declaration  ###
-#####################
+###############################
 
 Update_sys()
 {
@@ -49,9 +49,12 @@ Install_Mysql()
 	echo "mysql-server mysql-server/root_password password $adminPass" | sudo debconf-set-selections
 	echo "mysql-server mysql-server/root_password_again password $adminPass" | sudo debconf-set-selections
 	apt-get -y install mysql-server
+
+	# Secure MySQL installation
 	mysql -u root -p${adminPass} -e "DELETE FROM mysql.user WHERE User=''"
 	mysql -u root -p${adminPass} -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%'"
 	mysql -u root -p${adminPass} -e "FLUSH PRIVILEGES"
+
 	systemctl restart apache2
 
 	echo "# Set engine in utf8 by default" >> /etc/mysql/mysql.conf.d/mysqld.cnf
@@ -153,7 +156,7 @@ Install_mail_server()
 	echo "# Containment of postfixadmin" >> /etc/apache2/sites-available/postfixadmin.conf
 	echo "php_admin_value open_basedir /var/www/postfixadmin/" >> /etc/apache2/sites-available/postfixadmin.conf
 	echo "# Prohibit access to files starting with a dot" >> /etc/apache2/sites-available/postfixadmin.conf
-	echo "<FilesMatch "^\\.">" >> /etc/apache2/sites-available/postfixadmin.conf
+	echo "<FilesMatch ^\\.>" >> /etc/apache2/sites-available/postfixadmin.conf
 	echo "    Order allow,deny" >> /etc/apache2/sites-available/postfixadmin.conf
 	echo "    Deny from all" >> /etc/apache2/sites-available/postfixadmin.conf
 	echo "</FilesMatch>" >> /etc/apache2/sites-available/postfixadmin.conf
@@ -172,11 +175,11 @@ Install_mail_server()
 
 	sed -i "1 s/<?php/<?php\nif (\!isset(\$_SERVER[\"HTTP_HOST\"]))\n{\n    parse_str(\$argv[1], \$_POST);\n}\n\$_SERVER[\'REQUEST_METHOD \']=\'POST\';\n\$_SERVER[\'HTTP_HOST\']=\'$domainName\';/g" /var/www/postfixadmin/setup.php
 
-	cd /var/www/postfixadmin/
+	cd /var/www/postfixadmin/ || { echo "FATAL ERROR : cd command fail to go to /var/www/postfixadmin/"; exit 1; }
 
 	php -f /var/www/postfixadmin/setup.php "form=createadmin&setup_password=$adminPass&username=admin@$domainName&password=$adminPass&password2=$adminPass" >> /dev/null
 
-	cd ~
+	cd ~ || { echo "FATAL ERROR : cd command fail to go to ~"; exit 1; }
 
 	sed -i "2,7d " /var/www/postfixadmin/setup.php
 
@@ -414,10 +417,10 @@ Install_mail_server()
 	echo "#" >> /etc/postfix/master.cf
 	echo "# ====================================================================" >> /etc/postfix/master.cf
 	echo "#" >> /etc/postfix/master.cf
-	echo "# Recent Cyrus versions can use the existing "lmtp" master.cf entry." >> /etc/postfix/master.cf
+	echo "# Recent Cyrus versions can use the existing \"lmtp\" master.cf entry." >> /etc/postfix/master.cf
 	echo "#" >> /etc/postfix/master.cf
 	echo "# Specify in cyrus.conf:" >> /etc/postfix/master.cf
-	echo "#   lmtp    cmd="lmtpd -a" listen="localhost:lmtp" proto=tcp4" >> /etc/postfix/master.cf
+	echo "#   lmtp    cmd=\"lmtpd -a\" listen=\"localhost:lmtp\" proto=tcp4" >> /etc/postfix/master.cf
 	echo "#" >> /etc/postfix/master.cf
 	echo "# Specify in main.cf one or more of the following:" >> /etc/postfix/master.cf
 	echo "#  mailbox_transport = lmtp:inet:localhost" >> /etc/postfix/master.cf
@@ -451,7 +454,7 @@ Install_mail_server()
 	echo "bsmtp     unix  -       n       n       -       -       pipe" >> /etc/postfix/master.cf
 	echo "  flags=Fq. user=bsmtp argv=/usr/lib/bsmtp/bsmtp -t\$nexthop -f\$sender \$recipient" >> /etc/postfix/master.cf
 	echo "scalemail-backend unix  -       n       n       -       2       pipe" >> /etc/postfix/master.cf
-	echo "  flags=R user=scalemail argv=/usr/lib/scalemail/bin/scalemail-store \${nexthop} \${user} ${extension}" >> /etc/postfix/master.cf
+	echo "  flags=R user=scalemail argv=/usr/lib/scalemail/bin/scalemail-store \${nexthop} \${user} \${extension}" >> /etc/postfix/master.cf
 	echo "mailman   unix  -       n       n       -       -       pipe" >> /etc/postfix/master.cf
 	echo "  flags=FR user=list argv=/usr/lib/mailman/bin/postfix-to-mailman.py" >> /etc/postfix/master.cf
 	echo "  \${nexthop} \${user}" >> /etc/postfix/master.cf
@@ -1096,7 +1099,7 @@ Install_Rainloop()
 	echo '[version]' >> /var/www/rainloop/data/_data_/_default_/configs/application.ini
 	echo 'current = "1.10.4.183"' >> /var/www/rainloop/data/_data_/_default_/configs/application.ini
 	theDate=$(date)
-	echo "saved = \"$thedate\"" >> /var/www/rainloop/data/_data_/_default_/configs/application.ini
+	echo "saved = \"$theDate\"" >> /var/www/rainloop/data/_data_/_default_/configs/application.ini
 
 	# Installation of Rainloop
 	wget http://repository.rainloop.net/v2/webmail/rainloop-community-latest.zip
@@ -1104,11 +1107,11 @@ Install_Rainloop()
 	rm -rf rainloop-community-latest.zip
 	mkdir /var/www/rainloop/logs/
 
-	cd /var/www/rainloop
+	cd /var/www/rainloop || { echo "FATAL ERROR : cd command fail to go to /var/www/rainloop"; exit 1; }
 	find . -type d -exec chmod 755 {} \;
 	find . -type f -exec chmod 644 {} \;
 	chown -R www-data:www-data .
-	cd ~
+	cd ~ || { echo "FATAL ERROR : cd command fail to go to ~"; exit 1; }
 
 	# Create database
 	mysql -u root -p${adminPass} -e "CREATE DATABASE rainloop;"
@@ -1127,7 +1130,7 @@ Install_Rainloop()
 	echo "# Containment of rainloop" >> /etc/apache2/sites-available/rainloop.conf
 	echo "php_admin_value open_basedir /var/www/rainloop/" >> /etc/apache2/sites-available/rainloop.conf
 	echo "# Prohibit access to files starting with a dot" >> /etc/apache2/sites-available/rainloop.conf
-	echo "<FilesMatch "^\\.">" >> /etc/apache2/sites-available/rainloop.conf
+	echo "<FilesMatch ^\\.>" >> /etc/apache2/sites-available/rainloop.conf
 	echo "    Order allow,deny" >> /etc/apache2/sites-available/rainloop.conf
 	echo "    Deny from all" >> /etc/apache2/sites-available/rainloop.conf
 	echo "</FilesMatch>" >> /etc/apache2/sites-available/rainloop.conf
@@ -1156,11 +1159,11 @@ Install_Rainloop()
 
 	rm changeAdminPasswd.php
 
-	cd /var/www/rainloop
+	cd /var/www/rainloop || { echo "FATAL ERROR : cd command fail to go to /var/www/rainloop"; exit 1; }
 	find . -type d -exec chmod 755 {} \;
 	find . -type f -exec chmod 644 {} \;
 	chown -R www-data:www-data .
-	cd ~
+	cd ~ || { echo "FATAL ERROR : cd command fail to go to ~"; exit 1; }
 
 	systemctl restart apache2
 }
@@ -1190,6 +1193,7 @@ Install_Postgrey()
 	echo "/^smtpd\d+\.orange\.fr$/" >> /etc/postgrey/whitelist_clients
 
 	systemctl restart apache2
+	# BUG bug or not bug please try me
 	#mkdir /var/run/postgrey
 	#chown postgrey:postgrey /var/run/postgrey
 	#sed -i 's/PIDFILE= \/var\/run\/$DAEMON_NAME.pid/PIDFILE=\/var\/run\/$DAEMON_NAME\/$DAEMON_NAME.pid/g' /etc/init.d/postgrey
@@ -1223,7 +1227,7 @@ Install_WebsiteCD()
 	echo "# Containment of CairnDevices website (+phpmyadmin)" >> /etc/apache2/sites-available/CairnDevices.conf
 	echo "php_admin_value open_basedir /var/www/CairnDevices/:/usr/share/phpmyadmin/:/etc/phpmyadmin/:/var/lib/phpmyadmin/:/usr/share/php/php-gettext/:/usr/share/javascript/:/usr/share/php/tcpdf/:/usr/share/doc/phpmyadmin/:/usr/share/php/phpseclib/" >> /etc/apache2/sites-available/CairnDevices.conf
 	echo "# Prohibit access to files starting with a dot" >> /etc/apache2/sites-available/CairnDevices.conf
-	echo "<FilesMatch "^\\.">" >> /etc/apache2/sites-available/CairnDevices.conf
+	echo "<FilesMatch ^\\.>" >> /etc/apache2/sites-available/CairnDevices.conf
 	echo "    Order allow,deny" >> /etc/apache2/sites-available/CairnDevices.conf
 	echo "    Deny from all" >> /etc/apache2/sites-available/CairnDevices.conf
 	echo "</FilesMatch>" >> /etc/apache2/sites-available/CairnDevices.conf
@@ -1243,7 +1247,7 @@ Install_WebsiteCD()
 	a2ensite CairnDevices
 	systemctl restart apache2
 
-	# Creation of CairnDevices user FIXME
+	# FIXME Creation of CairnDevices user
 	USER="CairnDevices"
 	echo "Creation of CairnDevices user"
 	useradd -p $internalPass -M -r -U $USER
@@ -1271,10 +1275,53 @@ Install_WebsiteCD()
 	sleep 4
 }
 
+Install_Serge()
+{
+	# Download Serge
+	wget https://github.com/ABHC/SERGE/archive/web-interface.zip # HACK je suis sur la branche webUI attention
+	mkdir /var/www/Serge/
+	unzip master.zip -d /var/www/Serge/
+	rsync -a /var/www/Serge/SERGE-web-interface/ /var/www/Serge/
+	chmod -R 777 /var/www/Serge
+	rm web-interface.zip
+	rm -r /var/www/Serge/SERGE-web-interface/
+
+	# Configuration apache
+	echo "<VirtualHost *:80>" > /etc/apache2/sites-available/Serge.conf
+	echo "ServerAdmin postmaster@$domainName" >> /etc/apache2/sites-available/Serge.conf
+	echo "ServerName  $domainName/serge" >> /etc/apache2/sites-available/Serge.conf
+	echo "ServerAlias  serge.$domainName" >> /etc/apache2/sites-available/Serge.conf
+	echo "DocumentRoot /var/www/Serge/web/" >> /etc/apache2/sites-available/Serge.conf
+	echo "# Pass the default character set" >> /etc/apache2/sites-available/Serge.conf
+	echo "AddDefaultCharset utf-8" >> /etc/apache2/sites-available/Serge.conf
+	echo "# Containment of Serge webUI" >> /etc/apache2/sites-available/Serge.conf
+	echo "php_admin_value open_basedir /var/www/Serge/web" >> /etc/apache2/sites-available/Serge.conf
+	echo "# Prohibit access to files starting with a dot" >> /etc/apache2/sites-available/Serge.conf
+	echo "<FilesMatch ^\\.>" >> /etc/apache2/sites-available/Serge.conf
+	echo "    Order allow,deny" >> /etc/apache2/sites-available/Serge.conf
+	echo "    Deny from all" >> /etc/apache2/sites-available/Serge.conf
+	echo "</FilesMatch>" >> /etc/apache2/sites-available/Serge.conf
+	echo "<Directory /var/www/Serge/web/>" >> /etc/apache2/sites-available/Serge.conf
+	echo "Options Indexes FollowSymLinks" >> /etc/apache2/sites-available/Serge.conf
+	echo "AllowOverride all" >> /etc/apache2/sites-available/Serge.conf
+	echo "Order allow,deny" >> /etc/apache2/sites-available/Serge.conf
+	echo "allow from all" >> /etc/apache2/sites-available/Serge.conf
+	echo "</Directory>" >> /etc/apache2/sites-available/Serge.conf
+	echo "ErrorLog /var/www/Serge/web/logs/error.log" >> /etc/apache2/sites-available/Serge.conf
+	echo "CustomLog /var/www/Serge/web/logs/access.log combined" >> /etc/apache2/sites-available/Serge.conf
+	echo "</VirtualHost>" >> /etc/apache2/sites-available/Serge.conf
+
+	chown -R www-data:www-data /var/www/Serge/web/
+
+	a2ensite Serge
+	systemctl restart apache2
+}
+
 Security_app()
 {
+	# TODO Utilité de UFW ?
 	# Enabled UFW
-	#  ufw enable
+	# ufw enable
 
 	Mail_adress()
 	{
@@ -1306,7 +1353,7 @@ Security_app()
 		sed -i "s/<\/Directory>/<\/Directory>\nRedirect permanent \/ https:\/\/rainloop.$domainName\//g" /etc/apache2/sites-available/rainloop.conf
 		sed -i "s/<\/Directory>/<\/Directory>\nRedirect permanent \/ https:\/\/piwik.$domainName\//g" /etc/apache2/sites-available/piwik.conf
 
-		# Ajout d'une règle cron pour renouveller automatiquement le certificat
+		# Add crontab to in order to renew the certificate
 		crontab -l > /tmp/crontab.tmp
 		echo "* * * 2 * letsencrypt renew" >> /tmp/crontab.tmp
 		crontab /tmp/crontab.tmp
@@ -1326,6 +1373,7 @@ Security_app()
 		systemctl restart opendmarc
 		systemctl restart postgrey
 
+		# TODO Vérifier qu'il n'y a pas d'érreur avant de dire c'est cert
 		itscert="yes"
 	}
 
@@ -1341,31 +1389,46 @@ Security_app()
 		apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C80E383C3DE9F082E01391A0366C67DE91CA5D5F
 		echo "deb https://packages.cisofy.com/community/lynis/deb/ xenial main" > /etc/apt/sources.list.d/cisofy-lynis.list
 
+		# Create script
+		mkdir /home/$mainUser/.securityScript
+		echo "#!/bin/bash" > /home/$mainUser/.securityScript/rkhunter.sh
+		echo "apt update" >> /home/$mainUser/.securityScript/rkhunter.sh
+		echo "apt install rkhunter" >> /home/$mainUser/.securityScript/rkhunter.sh
+		echo "rkhunter --update" >> /home/$mainUser/.securityScript/rkhunter.sh
+		echo "/usr/bin/rkhunter --checkall --nocolors --skip-keypress | /usr/bin/mail -s \"Rkhunter on $hostname\" $email" >> /home/$mainUser/.securityScript/rkhunter.sh
+
+		echo "#!/bin/bash" > /home/$mainUser/.securityScript/chkrootkit.sh
+		echo "apt update" >> /home/$mainUser/.securityScript/chkrootkit.sh
+		echo "apt install chkrootkit" >> /home/$mainUser/.securityScript/chkrootkit.sh
+		echo "/usr/sbin/chkrootkit | /usr/bin/mail -s \"ChkRootkit on $hostname\" $email" >> /home/$mainUser/.securityScript/chkrootkit.sh
+
+		echo "#!/bin/bash" > /home/$mainUser/.securityScript/lynis.sh
+		echo "apt update" >> /home/$mainUser/.securityScript/lynis.sh
+		echo "apt install lynis" >> /home/$mainUser/.securityScript/lynis.sh
+		echo "/usr/sbin/lynis --check-all --cronjob -Q | /usr/bin/mail -s \"Lynis on $hostname\" $email" >> /home/$mainUser/.securityScript/lynis.sh
+
 		# Crontab rules for anti rootkit
 		crontab -l > /tmp/crontab.tmp
-		echo "0 0 * * 0 root apt update" >> /tmp/crontab.tmp
-		echo "10 0 * * 0 root rkhunter --update" >> /tmp/crontab.tmp
-		echo "0 1 * * 0 root rkhunter --checkall --nocolors --skip-keypress | mail -s \"RkHunter on $hostname\" $email" >> /tmp/crontab.tmp
+		echo "0 1 * * 0 /bin/bash /home/$mainUser/.securityScript/rkhunter.sh" >> /tmp/crontab.tmp
 
-		echo "0 2 1 * * root apt install chkrootkit" >> /tmp/crontab.tmp
-		echo "10 2 * * 0 root chkrootkit | mail -s \"ChkRootkit on $hostname\" $email" >> /tmp/crontab.tmp
+		echo "0 2 * * 0 /bin/bash /home/$mainUser/.securityScript/chkrootkit.sh" >> /tmp/crontab.tmp
 
-		echo "0 3 1 * * root apt install lynis" >> /tmp/crontab.tmp
-		echo "10 3 1 * * root lynis --check-all --cronjob -Q | mail -s \"Lynis on $hostname\" $email" >> /tmp/crontab.tmp
+		echo "0 3 * * 0 /bin/bash /home/$mainUser/.securityScript/lynis.sh" >> /tmp/crontab.tmp
+
 		crontab /tmp/crontab.tmp
 		rm /tmp/crontab.tmp
 	}
 
-	Install_SNORT()
+	Install_SNORT() # TODO Installation de SNORT
 	{
-		interface=$(route | grep default | awk '{print $8}')
+		#interface=$(route | grep default | awk '{print $8}')
 
 		apt install snort
 		# Change SSH port in /etc/snort/snort.conf
 
 		git clone git://github.com/firnsy/barnyard2.git
 
-		cd barnyard2/
+		#cd barnyard2/
 
 		autoreconf -fvi -I ./m4
 
@@ -1421,10 +1484,14 @@ Security_app()
 
 		ln -s /usr/share/modsecurity-crs/modsecurity_crs_10_setup.conf /usr/share/modsecurity-crs/activated_rules/modsecurity_crs_10_setup.conf
 
-		for f in `ls /usr/share/modsecurity-crs/base_rules`
+		cd /usr/share/modsecurity-crs/base_rules/ || { echo "FATAL ERROR : cd command fail to go to /usr/share/modsecurity-crs/base_rules/"; exit 1; }
+
+		for f in *
 		do
 			ln -s /usr/share/modsecurity-crs/base_rules/$f /usr/share/modsecurity-crs/activated_rules/$f
 		done
+
+		cd ~  || { echo "FATAL ERROR : cd command fail to go to ~"; exit 1; }
 
 		# rm /usr/share/modsecurity-crs/activated_rules/modsecurity_crs_21_protocol_anomalies.conf
 
@@ -1529,7 +1596,7 @@ Security_app()
 		logpath  = /var/log/syslog
 		maxretry = 3
 		bantime  = 600" > /etc/fail2ban/jail.local
-		
+
 		# Add filter http-get-post-dos
 		echo "[Definition]" > /etc/fail2ban/filter.d/http-get-post-dos.conf
 		echo 'failregex = ^<HOST> -.*"(GET|POST).*' >> /etc/fail2ban/filter.d/http-get-post-dos.conf
@@ -1695,7 +1762,10 @@ Security_app()
 		systemctl restart apache2
 
 		# Remove blacklist ip
-		0 5 * * * find /var/lock/mod_evasive -mtime +1 -type f -exec rm -f '{}' \;
+		crontab -l > /tmp/crontab.tmp
+		echo "0 5 * * * find /var/lock/mod_evasive -mtime +1 -type f -exec rm -f '{}' \;" >> /tmp/crontab.tmp
+		crontab /tmp/crontab.tmp
+		rm /tmp/crontab.tmp
 
 		echo "net.ipv4.conf.all.send_redirects = 0" >> /etc/sysctl.conf
 		echo "net.ipv4.conf.all.accept_source_route = 0" >> /etc/sysctl.conf
@@ -1720,7 +1790,7 @@ Security_app()
 
 	}
 
-	Install_AppArmor()
+	Install_AppArmor() # NOTE Utlité d'Apparmor dans ce contexte ?
 	{
 		apt-get -y install apparmor apparmor-profiles apparmor-utils
 	}
@@ -1749,7 +1819,7 @@ Security_app()
 		echo "# Containment of esmweb" >> /etc/apache2/sites-available/esmweb.conf
 		echo "php_admin_value open_basedir /var/www/esmweb/" >> /etc/apache2/sites-available/esmweb.conf
 		echo "# Prohibit access to files starting with a dot" >> /etc/apache2/sites-available/esmweb.conf
-		echo "<FilesMatch "^\\.">" >> /etc/apache2/sites-available/esmweb.conf
+		echo "<FilesMatch ^\\.>" >> /etc/apache2/sites-available/esmweb.conf
 		echo "    Order allow,deny" >> /etc/apache2/sites-available/esmweb.conf
 		echo "    Deny from all" >> /etc/apache2/sites-available/esmweb.conf
 		echo "</FilesMatch>" >> /etc/apache2/sites-available/esmweb.conf
@@ -2048,24 +2118,24 @@ ItsCert()
 		apt-get -y install openssl
 
 		# Creation of private key
-		cd /etc/ssl/
+		cd /etc/ssl/ || { echo "FATAL ERROR : cd command fail to go to /etc/ssl/"; exit 1; }
 		openssl genrsa -out mailserver.key 4096
 
-		# Ask for certificat signature
+		# Ask for certificate signature
 		openssl req -new -key mailserver.key -out mailserver.csr
 
-		# Create certificat
+		# Create certificate
 		openssl x509 -req -days 365 -in mailserver.csr -signkey mailserver.key -out mailserver.crt
-		cd ~
+		cd ~ || { echo "FATAL ERROR : cd command fail to go to ~"; exit 1; }
 
-		# Put certificat in conf file
+		# Put certificate in conf file
 		sed -i "s/\/etc\/letsencrypt\/live\/$domainName\/cert.pem/\/etc\/ssl\/mailserver.crt/g" /etc/postfix/main.cf
 		sed -i "s/\/etc\/letsencrypt\/live\/$domainName\/fullchain.pem/\/etc\/ssl\/mailserver.csr/g" /etc/postfix/main.cf
 		sed -i "s/\/etc\/letsencrypt\/live\/$domainName\/privkey.pem/\/etc\/ssl\/mailserver.key/g" /etc/postfix/main.cf
 		sed -i "s/\/etc\/letsencrypt\/live\/$domainName\/fullchain.pem/\/etc\/ssl\/mailserver.csr/g" /etc/dovecot/conf.d/10-ssl.conf
 		sed -i "s/\/etc\/letsencrypt\/live\/$domainName\/privkey.pem/\/etc\/ssl\/mailserver.key/g" /etc/dovecot/conf.d/10-ssl.conf
 
-		# Ajout d'une règle cron pour renouveller automatique le certificat
+		# Add crontab rule in order to renew the certificate
 		crontab -l > /tmp/crontab.tmp
 		echo "0 0 1 1 * openssl x509 -req -days 365 -in mailserver.csr -signkey mailserver.key -out mailserver.crt" >> /tmp/crontab.tmp
 		crontab /tmp/crontab.tmp
@@ -2085,26 +2155,30 @@ ItsCert()
 Dev_utils()
 {
 	mkdir Depots
-	cd Depots
+	cd Depots || { echo "FATAL ERROR : cd command fail to go to Depots"; exit 1; }
 
 	git clone https://github.com/Gspohu/WebSiteCD.git
+	git clone https://github.com/ABHC/SERGE.git
 
-	cd ~
+	cd ~ || { echo "FATAL ERROR : cd command fail to go to ~"; exit 1; }
 
 	echo "#!/bin/bash" >>  /usr/bin/updateCG
-	echo "rsync -a --exclude=\"Repository\" --exclude='logs' --exclude='WebsiteCD-install.sh' --exclude='SQL' /home/$mainUser/Depots/WebSiteCD/ /var/www/CairnDevices/" >>  /usr/bin/updateCG
+	echo "rsync -a --exclude=\"Repository\" --exclude='logs' --exclude='WebsiteCD-install.sh' --exclude='SQL' --exclude='js/piwik.js' /home/$mainUser/Depots/WebSiteCD/ /var/www/CairnDevices/ || { echo 'FATAL ERROR in rsync action for /home/$mainUser/Depots/WebSiteCD/'; exit 1; }" >>  /usr/bin/updateCG
+	echo "rsync -a --exclude='logs' /home/$mainUser/Depots/SERGE/ /var/www/Serge/web/ || { echo 'FATAL ERROR in rsync action for /home/$mainUser/Depots/SERGE/'; exit 1; }" >>  /usr/bin/updateCG
+	echo "chown -R www-data:www-data /var/www/CairnDevices/ || { echo 'FATAL ERROR in chown action for /var/www/CairnDevices/'; exit 1; }" >>  /usr/bin/updateCG
+	echo "chown -R www-data:www-data /var/www/Serge/web/ || { echo 'FATAL ERROR in chown action for /var/www/Serge/web/'; exit 1; }" >>  /usr/bin/updateCG
 	echo 'echo "Update Success !"' >> /usr/bin/updateCG
 
 	chmod +x  /usr/bin/updateCG
-	chown -R $mainUser /home/$mainUser/Depots/
 
 	# Create dev user
 	devPassCrypt=$(mkpasswd  -m sha-512 -S blacksalt -s <<< $adminPass)
 
 	useradd -p $devPassCrypt -s /bin/bash -d /home/$mainUser/Depots/ dev
 
-	chown -R dev:dev /home/$mainUser/Depots/WebSiteCD
+	chown -R dev:dev /home/$mainUser/Depots
 
+	# Creation of the log file for user dev
 	touch /var/log/devSsh.log
 	chown dev:dev /var/log/devSsh.log
 
@@ -2123,8 +2197,6 @@ Dev_utils()
 	dialog --backtitle "Installation du site web de Cairn devices" --title "Password for dev user" \
 	--ok-label "Next" --msgbox "In order to use remote sync use dev user with this password :
 	Your Admin password" 7 70
-
-	devPass="0"
 
 	# TODO Expliquer comment utiliser le mode DEV
 
@@ -2160,7 +2232,7 @@ Install_Piwik()
 	echo "# Containment of piwik" >> /etc/apache2/sites-available/piwik.conf
 	echo "php_admin_value open_basedir /var/www/piwik/" >> /etc/apache2/sites-available/piwik.conf
 	echo "# Prohibit access to files starting with a dot" >> /etc/apache2/sites-available/piwik.conf
-	echo "<FilesMatch "^\\.">" >> /etc/apache2/sites-available/piwik.conf
+	echo "<FilesMatch ^\\.>" >> /etc/apache2/sites-available/piwik.conf
 	echo "    Order allow,deny" >> /etc/apache2/sites-available/piwik.conf
 	echo "    Deny from all" >> /etc/apache2/sites-available/piwik.conf
 	echo "</FilesMatch>" >> /etc/apache2/sites-available/piwik.conf
@@ -2222,9 +2294,9 @@ Cleanning()
 	reboot
 }
 
-#######################
+###################################
 ###   Beginning of the script   ###
-#######################
+###################################
 
 Update_sys
 Install_dependency
@@ -2236,7 +2308,7 @@ $DIALOG --clear --backtitle "Installation du site web de Cairn Devices" --title 
 --menu "Bonjour, choisissez votre type d'installation :" 15 80 5 \
 "Dédié" "Installation dédié" \
 "Serveur mail" "Installation du serveur mail" \
-"Mode dev" "Mode développeur" 2> $FICHTMP
+"Mode dev" "Mode développeur" 2> $FICHTMP # TODO Mettre tout le dialog en anglais
 valret=$?
 choix=`cat $FICHTMP`
 case $valret in
@@ -2340,3 +2412,4 @@ then
 	Dev_utils
 	Cleanning
 fi
+# IDEA Ajouter un mode personnalisé ou l'on choisi tout les modules à installer Attention aux dépendances entre eux

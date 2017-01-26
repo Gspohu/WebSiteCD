@@ -1,17 +1,23 @@
-    <div id="header">
-        <div id="header_in">
-        
-        <h1 class=titleLogoName><a href="index.html"><img src="images/logo.png" alt="Cairn Devices"/></a> <a href="index.html">Cairn Devices</a></h1>
-        
-        <div id="menu">
-         <ul>
-            <li><a href="index.html" class="active">Home</a></li>
-            <li><a href="product.html">Products</a></li>
-	    <li><a href="about.html">Our team</a></li>
-            <li><a href="https://cairngit.eu/beta">CairnGit</a></li>
-            <li><a href="blog.html">Blog</a></li>
-         </ul>
-        </div>
-        
-        </div>
-    </div>
+<div id="header" class="header">
+
+	<h1 class="titleLogoName">
+		<a href="index">
+			<img src="images/logoDarkBackground.png" alt="Cairn Devices"/> <!-- Passer en SVG -->
+		</a>
+		<a class="companyName" href="index">Cairn Devices</a>
+	</h1>
+
+	<a class="navIcon" id="navIcon" href="#header"> &#9776; </a>
+	<a class="navIconClose" id="navIconClose" href="#"> &#10005; </a>
+
+	<div id="menu">
+		<ul>
+			<li><a href="blog">Blog</a></li>
+			<li><a href="https://cairngit.eu/beta">CairnGit</a></li>
+			<li><a href="about">Our team</a></li>
+			<li><a href="product">Products</a></li>
+			<li><a href="index" class="active">Home</a></li><!-- TODO mettre le active du nav en variable php -->
+		</ul>
+	</div>
+
+</div>
