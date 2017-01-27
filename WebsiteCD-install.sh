@@ -1280,7 +1280,7 @@ Install_Serge()
 	# Download Serge
 	wget https://github.com/ABHC/SERGE/archive/web-interface.zip # HACK je suis sur la branche webUI attention
 	mkdir /var/www/Serge/
-	unzip  -d web-interface.zip /var/www/Serge/
+	unzip web-interface.zip -d /var/www/Serge/
 	rsync -a /var/www/Serge/SERGE-web-interface/ /var/www/Serge/
 	chmod -R 777 /var/www/Serge
 	rm web-interface.zip
@@ -2182,9 +2182,13 @@ Dev_utils()
 		--inputbox "    /!\\ This name will be use in your commits /!\\" 7 60 2> $FICHTMP
 		gitname=`cat $FICHTMP`
 	done
-	echo "$adminPass" | su dev -c "git config --global user.email '$gitemail'"
-	echo "$adminPass" | su dev -c "git config --global user.name '$gitname'"
-	echo "$adminPass" | su dev -c "git config --global push.default simple"
+
+	echo "[user]
+        email = $gitemail
+        name = $gitname
+[push]
+        default = simple" >> /home/$mainUser/Depots/.gitconfig
+
 
 	cd ~ || { echo "FATAL ERROR : cd command fail to go to ~"; exit 1; }
 
