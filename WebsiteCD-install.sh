@@ -1280,7 +1280,7 @@ Install_Serge()
 	# Download Serge
 	wget https://github.com/ABHC/SERGE/archive/web-interface.zip # HACK je suis sur la branche webUI attention
 	mkdir /var/www/Serge/
-	unzip web-interface.zip -d /var/www/Serge/
+	unzip master.zip -d /var/www/Serge/
 	rsync -a /var/www/Serge/SERGE-web-interface/ /var/www/Serge/
 	chmod -R 777 /var/www/Serge
 	rm web-interface.zip
@@ -1315,6 +1315,8 @@ Install_Serge()
 
 	a2ensite Serge
 	systemctl restart apache2
+
+	serge="installed"
 }
 
 Security_app()
@@ -1364,6 +1366,10 @@ Security_app()
 		then
 			letsencrypt --apache  --email $email -d esmweb.$domainName
 			sed -i "s/<\/Directory>/<\/Directory>\nRedirect permanent \/ https:\/\/esmweb.$domainName\//g" /etc/apache2/sites-available/esmweb.conf
+		elif [ "$serge" = "installed" ]
+		then
+			letsencrypt --apache  --email $email -d serge.$domainName
+			sed -i "s/<\/Directory>/<\/Directory>\nRedirect permanent \/ https:\/\/serge.$domainName\//g" /etc/apache2/sites-available/Serge.conf
 		fi
 
 		systemctl restart apache2
@@ -2172,7 +2178,7 @@ Dev_utils()
 	# Ask for git name
 	while [ "$gitname" == "" ]
 	do
-		dialog --backtitle "Cairngit installation" --title "Name for git"\
+		dialog --backtitle "Cairngit installation" --title "Email for Piwik"\
 		--inputbox "    /!\\ This name will be use in your commits /!\\" 7 60 2> $FICHTMP
 		gitname=`cat $FICHTMP`
 	done
@@ -2183,7 +2189,7 @@ Dev_utils()
 
 	echo "#!/bin/bash" >>  /usr/bin/updateCG
 	echo "rsync -a --exclude=\"Repository\" --exclude='logs' --exclude='WebsiteCD-install.sh' --exclude='SQL' --exclude='js/piwik.js' /home/$mainUser/Depots/WebSiteCD/ /var/www/CairnDevices/ || { echo 'FATAL ERROR in rsync action for /home/$mainUser/Depots/WebSiteCD/'; exit 1; }" >>  /usr/bin/updateCG
-	echo "rsync -a --exclude='logs' /home/$mainUser/Depots/SERGE/ /var/www/Serge/web/ || { echo 'FATAL ERROR in rsync action for /home/$mainUser/Depots/SERGE/'; exit 1; }" >>  /usr/bin/updateCG
+	echo "rsync -a --exclude='logs' /home/$mainUser/Depots/SERGE/web/ /var/www/Serge/web/ || { echo 'FATAL ERROR in rsync action for /home/$mainUser/Depots/SERGE/web/'; exit 1; }" >>  /usr/bin/updateCG
 	echo "chown -R www-data:www-data /var/www/CairnDevices/ || { echo 'FATAL ERROR in chown action for /var/www/CairnDevices/'; exit 1; }" >>  /usr/bin/updateCG
 	echo "chown -R www-data:www-data /var/www/Serge/web/ || { echo 'FATAL ERROR in chown action for /var/www/Serge/web/'; exit 1; }" >>  /usr/bin/updateCG
 	echo 'echo "Update Success !"' >> /usr/bin/updateCG
