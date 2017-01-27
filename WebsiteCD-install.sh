@@ -2178,12 +2178,12 @@ Dev_utils()
 	# Ask for git name
 	while [ "$gitname" == "" ]
 	do
-		dialog --backtitle "Cairngit installation" --title "Email for Piwik"\
+		dialog --backtitle "Cairngit installation" --title "Email for git"\
 		--inputbox "    /!\\ This name will be use in your commits /!\\" 7 60 2> $FICHTMP
 		gitname=`cat $FICHTMP`
 	done
-	git config --global user.email "$gitemail"
-	git config --global user.name "$gitname"
+	su dev -c "git config --global user.email '$gitemail'"
+	su dev -c "git config --global user.name '$gitname'"
 
 	cd ~ || { echo "FATAL ERROR : cd command fail to go to ~"; exit 1; }
 
