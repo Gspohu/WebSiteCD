@@ -2184,6 +2184,7 @@ Dev_utils()
 	done
 	su dev -c "git config --global user.email '$gitemail'"
 	su dev -c "git config --global user.name '$gitname'"
+	su dev -c "git config --global push.default simple"
 
 	cd ~ || { echo "FATAL ERROR : cd command fail to go to ~"; exit 1; }
 
