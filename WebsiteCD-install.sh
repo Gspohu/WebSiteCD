@@ -1313,6 +1313,15 @@ Install_Serge()
 
 	chown -R www-data:www-data /var/www/Serge/web/
 
+	# Ajout de l'acces sécurisé
+	echo "CairnDevices" > /var/www/Serge/web/.htpasswd
+	echo $internalPass >> /var/www/Serge/web/.htpasswd
+	chmod 644 /var/www/Serge/web/.htpasswd
+	chown www-data:www-data /var/www/Serge/web/.htpasswd
+	# TODO add htaccess in web serge pour php rewriting
+	#chmod 644 /var/www/Serge/web/.htaccess
+	#chown www-data:www-data /var/www/Serge/web/.htaccess
+
 	a2ensite Serge
 	systemctl restart apache2
 
@@ -2206,6 +2215,8 @@ Dev_utils()
 
 	useradd -p $devPassCrypt -s /bin/bash -d /home/$mainUser/Depots/ dev
 
+	devPassCrypt="0"
+
 	chown -R dev:dev /home/$mainUser/Depots
 
 	# Creation of the log file for user dev
@@ -2317,6 +2328,9 @@ Install_Piwik()
 Cleanning()
 {
 	apt-get -y autoremove
+	passnohash="0"
+	internalPass="0"
+	adminPass="0"
 	echo -e "Cleaning .............\033[32mDone\033[00m"
 
 	echo "We will now reboot your server"
