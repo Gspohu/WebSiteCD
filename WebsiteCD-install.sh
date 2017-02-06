@@ -1366,7 +1366,7 @@ Security_app()
 
 		# Add crontab to in order to renew the certificate
 		crontab -l > /tmp/crontab.tmp
-		echo "* * * 2 * letsencrypt renew" >> /tmp/crontab.tmp
+		echo "0 0 1 */2 * letsencrypt renew" >> /tmp/crontab.tmp
 		crontab /tmp/crontab.tmp
 		rm /tmp/crontab.tmp
 
@@ -2201,6 +2201,7 @@ Dev_utils()
 
 	cd ~ || { echo "FATAL ERROR : cd command fail to go to ~"; exit 1; }
 
+# TODO les fichiers supprimés reste présent dans le dossier www
 	echo "#!/bin/bash" >>  /usr/bin/updateCG
 	echo "rsync -a --exclude=\"Repository\" --exclude='logs' --exclude='WebsiteCD-install.sh' --exclude='SQL' --exclude='js/piwik.js' /home/$mainUser/Depots/WebSiteCD/ /var/www/CairnDevices/ || { echo 'FATAL ERROR in rsync action for /home/$mainUser/Depots/WebSiteCD/'; exit 1; }" >>  /usr/bin/updateCG
 	echo "rsync -a --exclude='logs' /home/$mainUser/Depots/SERGE/web/ /var/www/Serge/web/ || { echo 'FATAL ERROR in rsync action for /home/$mainUser/Depots/SERGE/web/'; exit 1; }" >>  /usr/bin/updateCG
