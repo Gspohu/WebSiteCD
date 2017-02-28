@@ -1325,6 +1325,18 @@ Install_Serge()
 	a2ensite Serge
 	systemctl restart apache2
 
+	# Install Mediawiki
+	wget https://releases.wikimedia.org/mediawiki/1.28/mediawiki-1.28.0.tar.gz
+	tar -xvzf /pathtofile/mediawiki-*.tar.gz
+	mkdir /var/lib/mediawiki
+	mv mediawiki-*/* /var/lib/mediawiki
+
+	cd /var/www/  || { echo "FATAL ERROR : cd command fail to go to /var/www/"; exit 1; }
+
+	ln -s /var/lib/mediawiki mediawiki
+
+	cd ~  || { echo "FATAL ERROR : cd command fail to go to ~"; exit 1; }
+
 	serge="installed"
 }
 
