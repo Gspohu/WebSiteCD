@@ -1327,15 +1327,43 @@ Install_Serge()
 
 	# Install Mediawiki
 	wget https://releases.wikimedia.org/mediawiki/1.28/mediawiki-1.28.0.tar.gz
-	tar -xvzf /pathtofile/mediawiki-*.tar.gz
-	mkdir /var/lib/mediawiki
-	mv mediawiki-*/* /var/lib/mediawiki
+	tar -xvzf mediawiki-*.tar.gz
+	mkdir /var/www/mediawiki
+	mv mediawiki-*/* /var/www/mediawiki
 
-	cd /var/www/  || { echo "FATAL ERROR : cd command fail to go to /var/www/"; exit 1; }
+	chown www-data:www-data -R /var/www/mediawiki
 
-	ln -s /var/lib/mediawiki mediawiki
+	#Create MySQL database
+	mysql -u root -p${adminPass} -e "CREATE DATABASE mediawiki;"
+	mysql -u root -p${adminPass} -e "CREATE USER 'mediawiki'@'localhost' IDENTIFIED BY '$internalPass';"
+	mysql -u root -p${adminPass} -e "GRANT ALL PRIVILEGES ON mediawiki.* TO 'mediawiki'@'localhost'; '$internalPass';"
 
-	cd ~  || { echo "FATAL ERROR : cd command fail to go to ~"; exit 1; }
+	# Apache Configuration
+	echo "<VirtualHost *:80>" > /etc/apache2/sites-available/mediawiki.conf
+	echo "ServerAdmin postmaster@$domainName" >> /etc/apache2/sites-available/mediawiki.conf
+	echo "ServerName mediawiki.$domainName" >> /etc/apache2/sites-available/mediawiki.conf
+	echo "ServerAlias mediawiki.$domainName" >> /etc/apache2/sites-available/mediawiki.conf
+	echo "DocumentRoot /var/www/mediawiki/" >> /etc/apache2/sites-available/mediawiki.conf
+	echo "# Pass the default character set" >> /etc/apache2/sites-available/mediawiki.conf
+	echo "AddDefaultCharset utf-8" >> /etc/apache2/sites-available/mediawiki.conf
+	echo "# Containment of mediawiki" >> /etc/apache2/sites-available/mediawiki.conf
+	echo "php_admin_value open_basedir /var/www/mediawiki/" >> /etc/apache2/sites-available/mediawiki.conf
+	echo "# Prohibit access to files starting with a dot" >> /etc/apache2/sites-available/mediawiki.conf
+	echo "<FilesMatch ^\\.>" >> /etc/apache2/sites-available/mediawiki.conf
+	echo "    Order allow,deny" >> /etc/apache2/sites-available/mediawiki.conf
+	echo "    Deny from all" >> /etc/apache2/sites-available/mediawiki.conf
+	echo "</FilesMatch>" >> /etc/apache2/sites-available/mediawiki.conf
+	echo "<Directory /var/www/mediawiki/ >" >> /etc/apache2/sites-available/mediawiki.conf
+	echo "AllowOverride All" >> /etc/apache2/sites-available/mediawiki.conf
+	echo "Order allow,deny" >> /etc/apache2/sites-available/mediawiki.conf
+	echo "allow from all" >> /etc/apache2/sites-available/mediawiki.conf
+	echo "</Directory>" >> /etc/apache2/sites-available/mediawiki.conf
+	echo "ErrorLog /var/www/mediawiki/logs/error.log" >> /etc/apache2/sites-available/mediawiki.conf
+	echo "CustomLog /var/www/mediawiki/logs/access.log combined" >> /etc/apache2/sites-available/mediawiki.conf
+	echo "</VirtualHost>" >> /etc/apache2/sites-available/mediawiki.conf
+
+	a2ensite mediawiki.conf
+	systemctl restart apache2
 
 	serge="installed"
 }
