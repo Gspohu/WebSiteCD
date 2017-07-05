@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# TODO faire entrer le salage par l'utilisateur et lui expliquer que pour rendre ses instances compatible le salage doit rester le même entre toute les instances + MAJ du système de salage dans le reste du script et des autres applications
+
 # Error log
 exec 2> >(tee -a error.log)
 
@@ -61,6 +63,9 @@ Install_Mysql()
 	echo "skip-character-set-client-handshake" >> /etc/mysql/mysql.conf.d/mysqld.cnf
 	echo "collation-server=utf8_unicode_ci" >> /etc/mysql/mysql.conf.d/mysqld.cnf
 	echo "character-set-server=utf8" >> /etc/mysql/mysql.conf.d/mysqld.cnf
+
+	echo 'sql_mode = "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"' >> /etc/mysql/my.cnf
+
 
 	systemctl restart mysql
 
